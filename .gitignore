@@ -1,0 +1,11 @@
+build/
+node_modules/
+coverage/
+flow-typed/
+.vscode/
+*.db
+*.db.json
+.next
+.env
+.vscode/
+*.pem

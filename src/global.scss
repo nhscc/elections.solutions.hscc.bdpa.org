@@ -1,0 +1,44 @@
+@import "_variables.sass";
+@import "~react-bulma-components/src/index.sass";
+
+html,
+body,
+#__next {
+    height: 100%;
+    width: 100%;
+    display: flex;
+    flex-flow: column nowrap;
+    overflow-y: auto;
+}
+
+button {
+    height: 25px;
+    box-sizing: content-box;
+    outline: 0;
+
+    &::-moz-focus-inner {
+        border: 0 !important;
+    }
+
+    &:active,
+    &:hover,
+    &:visited,
+    &:focus {
+        outline: 0 !important;
+    }
+}
+
+a {
+    outline: 0;
+
+    &::-moz-focus-inner {
+        border: 0 !important;
+    }
+
+    &:active,
+    &:hover,
+    &:visited,
+    &:focus {
+        outline: 0 !important;
+    }
+}

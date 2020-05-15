@@ -1,0 +1,302 @@
+{
+    "nextUserId": 11,
+    "rootUserId": 1,
+    "users": {
+        "1": {
+            "username": "user-root",
+            "password": "$SHA-256<root>",
+            "type": "administrator",
+            "firstLogin": false,
+            "deleted": false,
+            "restricted": false,
+            "lastLogin": {
+                "ip": "192.168.115.5",
+                "time": 1588657370170
+            },
+            "name": {
+                "first": "Root",
+                "last": "User"
+            },
+            "elections": {
+                "eligible": [],
+                "moderating": []
+            },
+            "email": "root@user.com",
+            "phone": "1234567890",
+            "address": "Root userland",
+            "city": "Userland",
+            "state": "Userstate",
+            "zip": "60607",
+            "otp": ""
+        },
+        "2": {
+            "username": "user-admin",
+            "password": "$SHA-256<administrator>",
+            "type": "administrator",
+            "firstLogin": false,
+            "deleted": false,
+            "restricted": false,
+            "lastLogin": {
+                "ip": "127.0.0.1",
+                "time": 1588657370170
+            },
+            "name": {
+                "first": "Admin",
+                "last": "User"
+            },
+            "elections": {
+                "eligible": [],
+                "moderating": []
+            },
+            "email": "admin@user.com",
+            "phone": "1234567890",
+            "address": "Administrator userland",
+            "city": "Userland",
+            "state": "Userstate",
+            "zip": "60607",
+            "otp": ""
+        },
+        "3": {
+            "username": "user-mod",
+            "password": "$SHA-256<moderator>",
+            "type": "moderator",
+            "firstLogin": false,
+            "deleted": false,
+            "restricted": false,
+            "lastLogin": {
+                "ip": "10.10.10.1",
+                "time": 1588657370170
+            },
+            "name": {
+                "first": "Mod",
+                "last": "User"
+            },
+            "elections": {
+                "eligible": [],
+                "moderating": []
+            },
+            "email": "mod@user.com",
+            "phone": "1234567890",
+            "address": "Moderator userland",
+            "city": "Userland",
+            "state": "Userstate",
+            "zip": "60607",
+            "otp": ""
+        },
+        "4": {
+            "username": "user-voter",
+            "password": "$SHA-256<voter>",
+            "type": "voter",
+            "firstLogin": false,
+            "deleted": false,
+            "restricted": false,
+            "lastLogin": {
+                "ip": "1.1.1.1",
+                "time": 1588657370170
+            },
+            "name": {
+                "first": "Voter",
+                "last": "User"
+            },
+            "elections": {
+                "eligible": [],
+                "moderating": []
+            },
+            "email": "voter@user.com",
+            "phone": "1234567890",
+            "address": "Voter userland",
+            "city": "Userland",
+            "state": "Userstate",
+            "zip": "60607",
+            "otp": ""
+        },
+        "5": {
+            "username": "user-reporter",
+            "password": "$SHA-256<reporter>",
+            "type": "reporter",
+            "firstLogin": false,
+            "deleted": false,
+            "restricted": false,
+            "lastLogin": {
+                "ip": "8.8.8.8",
+                "time": 1588657370170
+            },
+            "name": {
+                "first": "Reporter",
+                "last": "User"
+            },
+            "elections": {
+                "eligible": [],
+                "moderating": []
+            },
+            "email": "reporter@user.com",
+            "phone": "1234567890",
+            "address": "Reporter userland",
+            "city": "Userland",
+            "state": "Userstate",
+            "zip": "60607",
+            "otp": ""
+        },
+        "6": {
+            "username": "user-new",
+            "password": "$SHA-256<new>",
+            "type": "voter",
+            "firstLogin": true,
+            "restricted": false,
+            "lastLogin": {
+                "ip": "",
+                "time": null
+            },
+            "name": {
+                "first": "",
+                "last": ""
+            },
+            "elections": {
+                "eligible": [],
+                "moderating": []
+            },
+            "email": "new@user.com",
+            "phone": "",
+            "address": "",
+            "city": "",
+            "state": "",
+            "zip": "",
+            "otp": ""
+        },
+        "7": {
+            "username": "user-restricted",
+            "password": "$SHA-256<restricted>",
+            "type": "voter",
+            "firstLogin": false,
+            "deleted": false,
+            "restricted": true,
+            "lastLogin": {
+                "ip": "4.4.4.4",
+                "time": 1588657370170
+            },
+            "name": {
+                "first": "Restricted",
+                "last": "User"
+            },
+            "elections": {
+                "eligible": [],
+                "moderating": []
+            },
+            "email": "restricted@user.com",
+            "phone": "1234567890",
+            "address": "Restricted userland",
+            "city": "Userland",
+            "state": "Userstate",
+            "zip": "60607",
+            "otp": ""
+        },
+        "8": {
+            "username": "user-resetpw",
+            "password": "$SHA-256<>",
+            "type": "voter",
+            "firstLogin": false,
+            "deleted": false,
+            "restricted": false,
+            "lastLogin": {
+                "ip": "3.3.3.3",
+                "time": 1588657370170
+            },
+            "name": {
+                "first": "Resetpw",
+                "last": "User"
+            },
+            "elections": {
+                "eligible": [],
+                "moderating": []
+            },
+            "email": "resetpw@user.com",
+            "phone": "1234567890",
+            "address": "Resetter userland",
+            "city": "Userland",
+            "state": "Userstate",
+            "zip": "60607",
+            "otp": ""
+        },
+        "9": {
+            "username": "user-deleted",
+            "password": "$SHA-256<deleted>",
+            "type": "voter",
+            "firstLogin": false,
+            "deleted": true,
+            "restricted": false,
+            "lastLogin": {
+                "ip": "2.2.2.2",
+                "time": 1588657370170
+            },
+            "name": {
+                "first": "Deleted",
+                "last": "User"
+            },
+            "elections": {
+                "eligible": [],
+                "moderating": []
+            },
+            "email": "deleted@user.com",
+            "phone": "1234567890",
+            "address": "Deleted userland",
+            "city": "Userland",
+            "state": "Userstate",
+            "zip": "60607",
+            "otp": ""
+        },
+        "10": {
+            "username": "user-otp",
+            "password": "$SHA-256<otp>",
+            "type": "voter",
+            "firstLogin": false,
+            "deleted": false,
+            "restricted": false,
+            "lastLogin": {
+                "ip": "2.4.4.2",
+                "time": 1584457370170
+            },
+            "name": {
+                "first": "Padded",
+                "last": "User"
+            },
+            "elections": {
+                "eligible": [],
+                "moderating": []
+            },
+            "email": "padded@user.com",
+            "phone": "1234567890",
+            "address": "Padded userland",
+            "city": "Userland",
+            "state": "Userstate",
+            "zip": "60607",
+            "otp": "123456789012345678901234567890"
+        }
+    },
+    "username->id": {
+        "user-root": 1,
+        "user-admin": 2,
+        "user-mod": 3,
+        "user-voter": 4,
+        "user-reporter": 5,
+        "user-new": 6,
+        "user-restricted": 7,
+        "user-resetpw": 8,
+        "user-deleted": 9,
+        "user-otp": 10
+    },
+    "email->id": {
+        "root@user.com": 1,
+        "admin@user.com": 2,
+        "mod@user.com": 3,
+        "voter@user.com": 4,
+        "reporter@user.com": 5,
+        "new@user.com": 6,
+        "restricted@user.com": 7,
+        "resetpw@user.com": 8,
+        "deleted@user.com": 9,
+        "padded@user.com": 10
+    },
+    "otp->id": {
+        "123456789012345678901234567890": 10
+    }
+}
