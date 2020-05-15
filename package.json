@@ -21,7 +21,8 @@
     "clean-types": "gulp cleanTypes",
     "generate": "BABEL_ENV=generator babel config --out-dir .",
     "regenerate": "gulp regenerate",
-    "list-tasks": "npm run && echo 'Compiling gulp task list...' && gulp --tasks"
+    "list-tasks": "npm run && echo 'Compiling gulp task list...' && gulp --tasks",
+    "preinstall": "npx npm-force-resolutions"
   },
   "author": "Xunnamius",
   "license": "ISC",
@@ -37,6 +38,9 @@
     "testPathIgnorePatterns": [
       "/node_modules/"
     ]
+  },
+  "resolutions": {
+    "yargs-parser": "^13.1.2"
   },
   "expectedEnvVariables": [
     "NODE_ENV|BABEL_ENV|APP_ENV",
