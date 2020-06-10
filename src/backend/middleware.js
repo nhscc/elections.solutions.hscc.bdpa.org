@@ -1,6 +1,6 @@
 /* @flow */
+
 import { isAuthed } from 'multiverse/simple-auth-session'
-import nextUtils from 'next/dist/next-server/lib/utils'
 
 import {
     UserTypes,
@@ -78,7 +78,7 @@ export function handleUserEndpoint(userId?: number, { req, res, returnAuthed }: 
     const canSeePrivateData = self || isAdmin;
 
     if(req.method == 'GET') {
-        const targetUser = (canSeePrivateData ? getUserData : getUserPublicData)(userId);
+        const targetUser: Object = (canSeePrivateData ? getUserData : getUserPublicData)(userId);
         const { password, ...userData } = targetUser; // ? Remove password prop
 
         !targetUser

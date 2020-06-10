@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import { useState, useEffect } from 'react'
-import { useRedirection } from 'multiverse/simple-auth-session'
+import { useRedirection } from 'multiverse/simple-auth-session/hooks'
 import { useUser } from 'universe/frontend/hooks'
 import { fetchEndpoint } from 'multiverse/fetch-endpoint'
 

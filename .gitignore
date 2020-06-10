@@ -7,5 +7,4 @@ flow-typed/
 *.db.json
 .next
 .env
-.vscode/
 *.pem

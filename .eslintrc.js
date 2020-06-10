@@ -3,16 +3,16 @@ const restrictedGlobals = require('confusing-browser-globals');
 module.exports = {
     'parser': 'babel-eslint',
     'plugins': [
-        'flowtype',
         'react',
         'react-hooks',
+        'flowtype',
         //'jsx-a11y',
     ],
     'extends': [
         'eslint:recommended',
-        'plugin:flowtype/recommended',
         'plugin:react/recommended',
         'react-app',
+        'plugin:flowtype/recommended',
         //'plugin:jsx-a11y/recommended'
     ],
     'parserOptions': {

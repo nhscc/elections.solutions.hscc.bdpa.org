@@ -3,7 +3,7 @@
 import * as React from 'react'
 import Navbar from 'components/navbar'
 import Footbar from 'components/footbar'
-import { useRedirection } from 'multiverse/simple-auth-session'
+import { useRedirection } from 'multiverse/simple-auth-session/hooks'
 
 const REDIRECT_ON_DEAUTH_LOCATION = '/';
 const REDIRECT_ON_FIRST_LOGIN_LOCATION = '/first-login';

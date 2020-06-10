@@ -193,7 +193,7 @@ export function doesEmailExist(email: string) {
  * 
  * @param {*} username 
  */
-export function getUserData(userId: number) {
+export function getUserData(userId: number): Object {
     const { otp, ...data } = getData(`/users/${userId}`) || {};
 
     if(!data.username)
@@ -392,7 +392,7 @@ const sanitizeUserData = ({ userId, data }: any) => {
  * ? return null!
  */
 export function areValidCredentials(username: string, password: string): boolean {
-    const data = getUserData(getUserIdFromUsername(username) || -1);
+    const data: Object = getUserData(getUserIdFromUsername(username) || -1);
     return !!data.userId && password == data.password && !data.deleted;
 }
 
