@@ -3,7 +3,7 @@ import findPackageJSON from 'find-package-json'
 
 import type { NextApiRequest, NextApiResponse } from 'next'
 
-export type NextParamsRR<T = object> = {
+export type NextParamsRR<T=Record<string, unknown>> = {
     req: NextApiRequest;
     res: NextApiResponse<T>;
 };
@@ -12,7 +12,7 @@ export type NextSessionRequest = NextApiRequest & { session: { __sa: { authed: b
 export type NextParamsRRWithSession = NextParamsRR & { req: NextSessionRequest };
 
 // TODO: document all of this
-let sessionOptions: object | null = null;
+let sessionOptions: Record<string, unknown> | null = null;
 
 export function getGlobalSessionOptions(): typeof sessionOptions {
     return sessionOptions = sessionOptions || findPackageJSON(process.cwd()).next()?.value?.sessionOptions || {};

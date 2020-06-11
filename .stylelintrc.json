@@ -3,18 +3,6 @@
         "stylelint-config-standard",
         "stylelint-config-css-modules"
     ],
-    "processors": [
-        ["@mapbox/stylelint-processor-arbitrary-tags", {
-            "startTag": "\\s*<style jsx>{`",
-            "endTag": "\\s*`}<\/style>",
-            "fileFilterRegex": ["\\.js$", "\\.html$"]
-        }],
-        ["@mapbox/stylelint-processor-arbitrary-tags", {
-            "startTag": "\\s*css.resolve`",
-            "endTag": "\\s*`",
-            "fileFilterRegex": ["\\.js$"]
-        }]
-    ],
     "rules": {
         "number-leading-zero": "always",
         "indentation": 4,
