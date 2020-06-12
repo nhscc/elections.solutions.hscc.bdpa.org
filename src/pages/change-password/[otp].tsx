@@ -24,7 +24,7 @@ export default function OTPAuthPage() {
                 !data.success ? setFailed(true) : frontendRedirect(REDIRECT_TO_LOCATION, { replace: true });
             });
         }
-    });
+    }, [failed, sent, otp, notAuthed, user.authed]);
 
     return (
         <div className="wrapper">

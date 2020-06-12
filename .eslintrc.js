@@ -58,6 +58,9 @@ module.exports = {
         }
     }],
     settings: {
+        'react': {
+            version: 'detect'
+        },
         'import/extensions': [
             '.ts', '.tsx', '.js', '.jsx',
         ],
@@ -85,5 +88,6 @@ module.exports = {
             // ? Don't go complaining about anything that we don't own
             '.*/node_modules/.*',
         ]
-    }
+    },
+    ignorePatterns: ['coverage', 'build']
 };

@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useUser } from 'universe/frontend/hooks'
 import { frontendRedirect } from 'multiverse/isomorphic-redirect'
 import NextLink from 'next/link'
@@ -22,7 +22,7 @@ export default function PasswordForm({ topmatter }: Record<string, unknown>) {
     const [ password, setPassword ] = useState('');
     const [ repeatPassword, setRepeatPassword ] = useState('');
 
-    const checkValidPassword = () => {
+    const checkValidPassword = useCallback(() => {
         const valid = validatePasswordsMatch(password, repeatPassword);
 
         if(!valid) {
@@ -31,9 +31,9 @@ export default function PasswordForm({ topmatter }: Record<string, unknown>) {
         }
 
         return valid;
-    }
+    }, [password, repeatPassword]);
 
-    const checkStrongPassword = () => {
+    const checkStrongPassword = useCallback(() => {
         const strong = calcPasswordStrength(password) != WEAK;
 
         if(!strong) {
@@ -42,7 +42,7 @@ export default function PasswordForm({ topmatter }: Record<string, unknown>) {
         }
 
         return strong;
-    };
+    }, [password]);
 
     useEffect(() => {
         setIsFirstRender(false);
@@ -51,7 +51,7 @@ export default function PasswordForm({ topmatter }: Record<string, unknown>) {
             setCanSubmit(true);
             setError('');
         }
-    }, [password, repeatPassword, isFirstRender, checkStrongPassword, checkValidPassword]);
+    }, [isFirstRender, checkStrongPassword, checkValidPassword]);
 
     const handleSubmit = async e => {
         setCanSubmit(false); // ? Disable the submit button so it's not double clicked

@@ -1,5 +1,6 @@
 import withTMInitializer from 'next-transpile-modules'
 import withBundleAnalyzer from '@next/bundle-analyzer'
+import { join as pathJoin } from 'path'
 
 import type { Configuration } from 'webpack'
 
@@ -26,9 +27,7 @@ module.exports = () => {
         // ? Renames the build dir "build" instead of ".next"
         distDir: 'build',
 
-        sassOptions: {
-            includePaths: [ require('path').join(__dirname, '/src') ]
-        },
+        sassOptions: { includePaths: [ pathJoin(__dirname, '/src') ]},
 
         // ? Webpack configuration
         // ! Note that the webpack configuration is executed twice: once
