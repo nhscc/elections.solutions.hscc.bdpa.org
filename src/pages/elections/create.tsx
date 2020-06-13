@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { useUserType } from 'universe/frontend/hooks'
-import { UserTypes } from 'universe/backend'
+import { UserTypes } from 'types/global'
 import { useRedirection } from 'multiverse/simple-auth-session/hooks'
 import MainLayout from 'components/layout/main'
 

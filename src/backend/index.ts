@@ -6,6 +6,7 @@ import isNumber from 'is-number';
 import deepMerge from 'deepmerge'
 import deepFreeze from 'deep-freeze'
 import genRndString from 'crypto-random-string'
+import { UserTypes } from 'types/global'
 
 let db = null;
 
@@ -14,19 +15,6 @@ export const maxUsernameLength = 20;
 export const expectedPhoneNumberLength = 10;
 export const expectedZipLength = 5;
 export const otpStringLength = 30;
-
-/**
- * 
- */
-export const UserTypes = {
-    default: '', // ? This is set later (below)
-    administrator: 'administrator',
-    moderator: 'moderator',
-    voter: 'voter',
-    reporter: 'reporter',
-};
-
-UserTypes.default = UserTypes.voter;
 
 export const DefaultUserProperties = {
     username: '',

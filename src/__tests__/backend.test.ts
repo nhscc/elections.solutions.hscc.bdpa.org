@@ -1,5 +1,6 @@
 import { JsonDB as DummyDB } from 'node-json-db';
 import { Config as DummyDBConfig } from 'node-json-db/dist/lib/JsonDBConfig'
+import { UserTypes } from 'types/global'
 import tmpDir from 'temp-dir'
 import del from 'del'
 import cpFile from 'cp-file'
@@ -54,14 +55,14 @@ describe('createUser', () => {
 
     it('sets new user type to UserTypes.default when type is not specified', async () => {
         const newId = backend.createUser('testuser', 't');
-        expect((await getRawDB())?.users[newId].type).toBe(backend.UserTypes.default);
+        expect((await getRawDB())?.users[newId].type).toBe(UserTypes.default);
     });
 
     it('adds valid user properties to newly created user', async () => {
-        const newId = backend.createUser('testuser', 'w', { type: backend.UserTypes.reporter, name: { first: 'tre', last: 'giles' }});
+        const newId = backend.createUser('testuser', 'w', { type: UserTypes.reporter, name: { first: 'tre', last: 'giles' }});
 
         expect((await getRawDB())?.users[newId].name).toStrictEqual({ first: 'tre', last: 'giles' });
-        expect((await getRawDB())?.users[newId].type).toBe(backend.UserTypes.reporter);
+        expect((await getRawDB())?.users[newId].type).toBe(UserTypes.reporter);
     });
 
     it('throws on non-existent user property', async () => {
@@ -264,7 +265,7 @@ describe('getUserData', () => {
         let data = backend.getUserData(newId);
 
         expect(data.root).toBe(false);
-        expect(data.type).not.toBe(backend.UserTypes.administrator);
+        expect(data.type).not.toBe(UserTypes.administrator);
 
         db.push('/rootUserId', newId);
         data = backend.getUserData(newId);
@@ -272,7 +273,7 @@ describe('getUserData', () => {
         expect(data.root).toBe(true);
         expect(data.restricted).toBe(false);
         expect(data.deleted).toBe(false);
-        expect(data.type).toBe(backend.UserTypes.administrator);
+        expect(data.type).toBe(UserTypes.administrator);
     });
 
     it('returns `{}` if userId does not exist', async () => {
@@ -292,7 +293,7 @@ describe('getUserPublicData', () => {
 
         expect(userId).toBe(newId);
         expect(username).toBe('testuser');
-        expect(type).toBe(backend.UserTypes.default);
+        expect(type).toBe(UserTypes.default);
         expect(rest).toStrictEqual({});
     });
 

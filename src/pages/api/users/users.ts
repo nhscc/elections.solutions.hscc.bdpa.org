@@ -1,7 +1,6 @@
 import { handleAuthedEndpoint } from 'universe/backend/middleware'
-
+import { UserTypes } from 'types/global'
 import {
-    UserTypes,
     createUser,
     getUserData,
     getUsersPublicData,

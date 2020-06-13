@@ -29,7 +29,7 @@ export function useRedirection({ endpointURI, redirectIf, redirectTo, redirectAr
 
     // ? This will cause all windows and tabs sharing the session to deauth
     useLayoutEffect(() => {
-        if(!isUndefined(data))
+        if(isUndefined(data))
             return;
 
         if(!redirectTo || !redirectIf || !redirectIf(data, true))

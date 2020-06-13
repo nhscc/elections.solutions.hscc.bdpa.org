@@ -1,7 +1,6 @@
 import { isAuthed } from 'multiverse/simple-auth-session'
-
+import { UserTypes } from 'types/global'
 import {
-    UserTypes,
     getUserData,
     mergeUserData,
     getUserPublicData,

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useIsomorphicLayoutEffect as useLayoutEffect } from 'react-use'
-import { UserTypes } from 'universe/backend'
+import { UserTypes } from 'types/global'
 import { defaultSWRFetcher } from 'universe/frontend'
 import { fetchEndpoint } from 'multiverse/fetch-endpoint'
 import useSWR from 'swr'
