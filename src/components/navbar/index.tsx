@@ -6,19 +6,21 @@ import { mutate } from 'swr'
 import { useRouter } from 'next/router'
 import { useUserType } from 'universe/frontend/hooks'
 
-const handleLogout = async e => {
-    e.preventDefault();
-    await fetchEndpoint.post('/api/logout');
-    mutate('/api/user', { authed: false });
-};
+export type RenderProp = (activateIf: (...regularExpressions: string[]) => string | undefined) => JSX.Element;
 
-export default function Navbar({ children: renderProp }: Record<string, unknown>) {
+export default function Navbar({ children: renderProp }: { children?: RenderProp }) {
     const router = useRouter();
     const { isAdmin, isModerator } = useUserType();
     const [ docked, setDocked ] = useState(false);
 
-    const activateIf = (...regexps) => regexps.some(regex => !!router.pathname.match(regex)) ? 'active' : null;
+    const activateIf = (...exps: string[]) => exps.some(regex => !!router.pathname.match(regex)) ? 'active' : undefined;
     const middleMatter = renderProp && renderProp(activateIf);
+
+    const handleLogout = async (e: React.SyntheticEvent) => {
+        e.preventDefault();
+        await fetchEndpoint.post('/api/logout');
+        mutate('/api/user', { authed: false });
+    };
 
     return (
         <nav className="nav">

@@ -1,78 +1,95 @@
 import { isAuthed } from 'multiverse/simple-auth-session'
-import { UserTypes } from 'types/global'
+import { AppError } from 'universe/backend/error'
 import {
-    getUserData,
+    getUser,
     mergeUserData,
-    getUserPublicData,
+    getPublicUser,
 } from 'universe/backend'
 
 import type { NextParamsRRWithSession } from 'multiverse/simple-auth-session'
+import type { User, LastLogin } from 'types/global'
 
-export type GenericHandlerParams = NextParamsRRWithSession & { methods: Array<string> };
-export type AsyncHandlerCallback = (NextParamsRRWithSession) => Promise;
+export type NextParams = NextParamsRRWithSession<{ userId?: number, prevLogin?: LastLogin }>
+export type GenHanParams = NextParams & { methods: Array<string> };
+export type AsyncHanCallback = (params: NextParams) => Promise<void>;
+export type HanUseEndParams = NextParams & { returnAuthed?: boolean };
 
 /**
  * Generic middleware to handle any api endpoint. You can give it an empty async
  * handler function to trigger a 501 not implemented (to stub out API
  * endpoints).
  */
-export async function handleEndpoint(fn: AsyncHandlerCallback, { req, res, methods }: GenericHandlerParams) {
-    if(!methods.includes(req.method))
-        res.status(405).send({ error: `method ${req.method} is not allowed` });
+export async function handleEndpoint(fn: AsyncHanCallback, { req, res, methods }: GenHanParams) {
+    // TODO: backport middleware updates from API source
 
-    else {
-        try {
-            // ? This will let us know if the sent method was called
-            let sent = false;
-            res.$send = res.send;
-            res.send = (...args) => (sent = true) && res.$send(...args);
+    const resp = res as typeof res & { $send: typeof res.send };
+    // ? This will let us know if the sent method was called
+    let sent = false;
 
-            await fn({ req, res });
+    resp.$send = resp.send;
+    resp.send = (...args): void => {
+        sent = true;
+        resp.$send(...args);
+    };
 
-            // ? If the response hasn't been sent yet, send one now
-            !sent && res.status(400).send({ error: 'bad request' });
-        }
-        catch(error) { res.status(400).send({ error: error.message }); }
+    try {
+        if(!methods.includes(req.method || ''))
+            res.status(405).send({ error: `method ${req.method} is not allowed` });
+
+        await fn({ req, res });
+
+        // ? If the response hasn't been sent yet, send one now
+        !sent && res.status(400).send({ error: 'bad request' });
+    }
+
+    catch(error) {
+        res.status(400).send({ error: error.message });
     }
 }
 
 /**
  * Generic middleware to handle any api endpoint with required no authentication
  */
-export async function handleUnauthedEndpoint(fn: AsyncHandlerCallback, { req, res, methods }: GenericHandlerParams) {
-    if(await isAuthed({ req, res}))
-        res.status(403).send({ error: 'authenticated sessions cannot access this endpoint' });
+export async function handleUnauthedEndpoint(fn: AsyncHanCallback, { req, res, methods }: GenHanParams) {
+    await handleEndpoint(async params => {
+        if(await isAuthed({ req, res}))
+            res.status(403).send({ error: 'authenticated sessions cannot access this endpoint' });
 
-    else
-        await handleEndpoint(fn, { req, res, methods });
+        else
+            await fn(params);
+    }, { req, res, methods });
 }
 
 /**
  * Generic middleware to handle any api endpoint with required authentication
  */
-export async function handleAuthedEndpoint(fn: AsyncHandlerCallback, { req, res, methods }: GenericHandlerParams) {
-    if(!await isAuthed({ req, res}))
-        res.status(401).send({ error: 'session must authenticate first' });
+export async function handleAuthedEndpoint(fn: AsyncHanCallback, { req, res, methods }: GenHanParams) {
+    await handleEndpoint(async params => {
+        if(!await isAuthed({ req, res}))
+            res.status(401).send({ error: 'session must authenticate first' });
 
-    else
-        await handleEndpoint(fn, { req, res, methods });
+        else
+            await fn(params);
+    }, { req, res, methods });
 }
 
 /**
  * High-level middleware to handle /api/user related endpoint functions
  */
-export function handleUserEndpoint(userId?: number, { req, res, returnAuthed }: NextParamsRRWithSession & { returnAuthed?: boolean }) {
+export function handleUserEndpoint(userId: number, { req, res, returnAuthed }: HanUseEndParams) {
     userId = userId || -1;
 
+    if(req.session.userId === undefined)
+        throw new AppError('unable to resolve session userId');
+
     const self = userId == req.session.userId;
-    const sessionUser = getUserData(req.session.userId);
-    const isAdmin = sessionUser.type == UserTypes.administrator;
-    const isMod = sessionUser.type == UserTypes.moderator;
+    const sessionUser = getUser(req.session.userId);
+    const isAdmin = sessionUser.type == 'administrator';
     const canSeePrivateData = self || isAdmin;
 
     if(req.method == 'GET') {
-        const targetUser = (canSeePrivateData ? getUserData : getUserPublicData)(userId);
-        const { password, ...userData } = targetUser; // ? Remove password prop
+        const targetUser = (canSeePrivateData ? getUser : getPublicUser)(userId);
+        const { password, ...userData } = targetUser as unknown as User; // ? Remove password prop
 
         !targetUser
             ? res.status(404).send({ error: `user id "${userId}" does not exist` })
@@ -92,7 +109,7 @@ export function handleUserEndpoint(userId?: number, { req, res, returnAuthed }: 
         // ? Only admins can mutate other users and only root can mutate
         // ? admins! Users can mutate themselves, however. Also, only root
         // ? can turn normal users into administrators and vice-versa
-        if(!self && (!isAdmin || (!sessionUser.root && ([oldType, newType].includes(UserTypes.administrator)))))
+        if(!self && (!isAdmin || (!sessionUser.root && ([oldType, newType].includes('administrator')))))
             res.status(403).send({ error: 'user lacks authorization to make this mutation' });
 
         // ? Non-root users cannot undelete themselves
@@ -129,11 +146,11 @@ export function handleUserEndpoint(userId?: number, { req, res, returnAuthed }: 
     }
 
     else if(req.method == 'DELETE') {
-        const { type: oldType } = getUserData(userId);
+        const { type: oldType } = getUser(userId);
 
         // ? Only admins can delete users and only root can delete admins!
         // ? Users can delete themselves, however
-        if(!self && (!isAdmin || (!sessionUser.root && oldType == UserTypes.administrator)))
+        if(!self && (!isAdmin || (!sessionUser.root && oldType == 'administrator')))
             res.status(403).send({ error: 'user lacks authorization to delete this user' });
 
         else {

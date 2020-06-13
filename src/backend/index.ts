@@ -1,14 +1,17 @@
 import { JsonDB as DummyDB } from 'node-json-db';
 import { Config as DummyDBConfig } from 'node-json-db/dist/lib/JsonDBConfig'
+import { getEnv } from 'universe/backend/env'
+import { NotFoundError, ValidationError, AlreadyExistsError, AppError } from 'universe/backend/error';
+import { UserTypes, UserType, Users } from 'types/global'
 import EmailValidator from 'email-validator'
 import isString from 'is-string'
 import isNumber from 'is-number';
 import deepMerge from 'deepmerge'
-import deepFreeze from 'deep-freeze'
 import genRndString from 'crypto-random-string'
-import { UserTypes } from 'types/global'
 
-let db = null;
+import type { User, AugmentedUser } from 'types/global'
+
+let db: DummyDB;
 
 export const minUsernameLength = 5;
 export const maxUsernameLength = 20;
@@ -16,10 +19,16 @@ export const expectedPhoneNumberLength = 10;
 export const expectedZipLength = 5;
 export const otpStringLength = 30;
 
-export const DefaultUserProperties = {
+type DefaultUser = Omit<User, 'type' | 'firstLogin' | 'lastLogin'> & {
+    type: null;
+    firstLogin: true;
+    lastLogin: { ip: '', time: null };
+};
+
+export const DefaultUserProperties: DefaultUser = {
     username: '',
     password: '',
-    type: UserTypes.default,
+    type: null,
     firstLogin: true,
     restricted: false,
     deleted: false,
@@ -38,7 +47,7 @@ export const DefaultUserProperties = {
 // ? These hardcoded values override whatever's in the database when we get the
 // ? root user's data
 export const rootHardcodedData = {
-    type: UserTypes.administrator,
+    type: 'administrator',
     restricted: false,
     deleted: false,
 };
@@ -47,13 +56,13 @@ export const rootHardcodedData = {
  * Used to lazily create the database once on-demand instead of immediately when
  * the app runs. Not exported.
  */
-const getDB = (): DummyDB => db || (db = new DummyDB(new DummyDBConfig(process.env.DUMMY_DB_PATH, true, true)));
+const getDB = () => db || (db = new DummyDB(new DummyDBConfig(getEnv().DUMMY_DB_PATH, true, true)));
 
 /**
  * 
  * @param {*} path 
  */
-const getData = path => {
+const getData = (path: string): unknown => {
     try { return getDB().getData(path); }
     catch(e) {
         if(!e.message.startsWith("Can't find dataPath"))
@@ -67,7 +76,7 @@ const getData = path => {
  * 
  * @param {*} path 
  */
-const delData = path => {
+const delData = (path: string) => {
     try { getDB().delete(path); }
     catch(e) {
         if(!e.message.startsWith("Can't find dataPath"))
@@ -79,13 +88,15 @@ const delData = path => {
  * 
  * @param  {...any} args 
  */
-const putData = (...args) => getDB().push(...args);
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore
+const putData = (...args: unknown[]) => getDB().push(...args);
 
 /**
  * Used for testing purposes. Sets the global db instance to something else.
  */
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types, @typescript-eslint/no-explicit-any
-export function setDB(JSONDatabase: any): void { db = JSONDatabase; }
+export function setDB(JSONDatabase: any) { db = JSONDatabase; }
 
 /**
  * This function is called whenever modifications are being made to user data.
@@ -93,19 +104,20 @@ export function setDB(JSONDatabase: any): void { db = JSONDatabase; }
  *
  * Returns a merged data object that might be pushed into the database or null
  */
-const sanitizeUserData = ({ userId, data }) => {
+const sanitizeUserData = ({ userId, data }: { userId?: number, data: Partial<User> }) => {
     const hasUserId = userId !== undefined;
-    const oldData = hasUserId && getData(`/users/${userId}`);
+    const oldData = hasUserId ? getData(`/users/${userId}`) as User : null;
 
     data = data || {};
 
     // ? userId is not falsey only when we're mutating, so the userId must exist
     if(hasUserId && !oldData)
-        throw new Error(`user id "${userId}" does not exist`);
+        throw new NotFoundError(`user id "${userId}" does not exist`);
 
     // ? Protect data integrity: let's whitelist possible user data mutations
-    if(!Object.keys(data).every(key => Object.keys(DefaultUserProperties).includes(key)))
-        throw new Error('invalid object key(s) present in data');
+    const keys = Object.keys(data);
+    if(!keys.every(key => Object.keys(DefaultUserProperties).includes(key)))
+        throw new ValidationError('only valid object key(s) in data', keys.join(', '));
 
     // ? We do this JSON stuff here to "deep clone" DefaultUserProperties
     // ? ensuring no references are shared between user objects (bad!)
@@ -115,41 +127,45 @@ const sanitizeUserData = ({ userId, data }) => {
     // ! OVERWRITE the old array, they will not be merged by design. Otherwise,
     // ! a deep merge occurs as expected.
     // See: https://www.npmjs.com/package/deepmerge#arraymerge-example-overwrite-target-array
-    const newData = deepMerge.all([defaultUserData, (oldData || {}), (data || {})], { arrayMerge: (d, s) => s });
+    const newData = deepMerge.all([
+        defaultUserData,
+        oldData || {},
+        data || {}
+    ], { arrayMerge: (_, s) => s }) as User;
 
     // ? Ensure username is a string
     if(!isString(newData.username))
-        throw new Error(`username "${newData.username}" is not a string`);
+        throw new ValidationError('username to be a string', newData.username);
 
     // ? Ensure usernames are not less than minUsernameLength characters
     if(!(newData.username.length >= minUsernameLength))
-        throw new Error(`username "${newData.username}" must be no shorter than ${minUsernameLength} characters`);
+        throw new ValidationError(`username.length >= ${minUsernameLength}`, newData.username);
 
     // ? Ensure usernames are not more than maxUsernameLength characters
     if(!(newData.username.length <= maxUsernameLength))
-        throw new Error(`username "${newData.username}" must be no longer than ${maxUsernameLength} characters`);
+        throw new ValidationError(`username.length <= ${maxUsernameLength}`, newData.username);
 
     // ? Ensure usernames are alphabetical plus dashes
     if(!(/^[a-zA-Z-]+$/).test(newData.username))
-        throw new Error(`username "${newData.username}" contains invalid characters (allowed: a-z, A-Z, and -)`);
+        throw new ValidationError('username to contain only characters a-z, A-Z, and -', newData.username);
 
     // ? Ensure usernames remain unique
     if(newData.username != oldData?.username && getData(`/username->id/${newData.username}`))
-        throw new Error(`username "${newData.username}" already exists`);
+        throw new AlreadyExistsError(`username "${newData.username}"`);
 
     // ? Ensure password is a string
     if(!isString(newData.password))
-        throw new Error(`password "${newData.password}" is not a string`);
+        throw new ValidationError('password to be a string', newData.password);
 
     // TODO: ensure passwords are proper (i.e. expected ciphertext length && password != username hashed (empty, salted))
 
     // ? Ensure the type is a value in our UserTypes enum
-    if(!Object.values(UserTypes).includes(newData.type))
-        throw new Error(`type "${newData.type}" is invalid`);
+    if(!UserTypes.includes(newData.type))
+        throw new ValidationError('valid type', newData.type);
 
     // ? firstLogin cannot go from false to true
     else if(oldData?.firstLogin === false && newData.firstLogin)
-        throw new Error('firstLogin cannot be set to `true`');
+        throw new ValidationError('firstLogin cannot be set to `true`');
 
     // ? Ensure firstLogin, restricted, and deleted are booleans
     newData.firstLogin = !!newData.firstLogin;
@@ -161,7 +177,7 @@ const sanitizeUserData = ({ userId, data }) => {
         || !isString(newData.lastLogin.ip)
         || (newData.lastLogin.time !== null && !isNumber(newData.lastLogin.time))
         || Object.keys(newData.lastLogin).length != 2) {
-        throw new Error(`lastLogin must be valid, saw \`${JSON.stringify(newData.lastLogin)}\` instead`);
+        throw new ValidationError('a valid lastLogin', JSON.stringify(newData.lastLogin));
     }
 
     // ? Ensure the name is proper
@@ -169,7 +185,7 @@ const sanitizeUserData = ({ userId, data }) => {
         || !isString(newData.name.first)
         || !isString(newData.name.last)
         || Object.keys(newData.name).length != 2) {
-        throw new Error(`name must be valid, saw \`${JSON.stringify(newData.name)}\` instead`);
+        throw new ValidationError('a valid name', JSON.stringify(newData.name));
     }
 
     // ? Ensure the elections is proper
@@ -177,40 +193,40 @@ const sanitizeUserData = ({ userId, data }) => {
         || !Array.isArray(newData.elections.eligible)
         || !Array.isArray(newData.elections.moderating)
         || Object.keys(newData.elections).length != 2
-        // ? All the ids must be positive numbers
-        || Object.values(newData.elections).some(list => list.some(id => !(isNumber(id) && id > 0)))) {
-        throw new Error(`elections must be valid (ids all positive integers), saw \`${JSON.stringify(newData.elections)}\` instead`);
+        // ? All the ids must be strings
+        || Object.values(newData.elections).some(list => list.some(id => !isString(id)))) {
+        throw new ValidationError('valid elections mappings', JSON.stringify(newData.elections));
     }
 
     // ? Ensure the email address is valid (regex)
     if(newData.email !== '' && !EmailValidator.validate(newData.email))
-        throw new Error(`email "${newData.email}" is invalid`);
+        throw new ValidationError('a valid email', newData.email);
 
     // ? Ensure emails remain unique
     if(newData.email !== '' && newData.email != oldData?.email && getData(`/email->id/${newData.email}`))
-        throw new Error(`email "${newData.email}" already exists`);
+        throw new AlreadyExistsError(`email "${newData.email}"`);
 
     // ? Ensure the phone number is valid (length, numbers)
     if(newData.phone !== '' && (newData.phone.length != expectedPhoneNumberLength || !isNumber(newData.phone)))
-        throw new Error(`phone number "${newData.phone}" must be a ${expectedPhoneNumberLength} digit string`);
+        throw new ValidationError(`${expectedPhoneNumberLength} digit phone number (string)`, newData.phone);
 
     // ? Ensure address, city, and state are strings
     if(!isString(newData.address) || !isString(newData.city) || !isString(newData.state))
-        throw new Error(`any of the keys "address", "city", "state", or "zip" are invalid`);
+        throw new ValidationError(`any of the keys "address", "city", "state", or "zip" are invalid`);
 
     // ? Ensure the zip is valid (length, numbers)
     if(newData.zip !== '' && (newData.zip.length != expectedZipLength || !isNumber(newData.zip)))
-        throw new Error(`zip number "${newData.zip}" must be a ${expectedZipLength} digit string`);
+        throw new ValidationError(`${expectedZipLength} digit zip code (string)`, newData.zip);
 
     // ? Ensure OTP is a string
     if(newData.otp !== '' && !isString(newData.otp))
-        throw new Error(`otp "${newData.otp}" is not a string`);
+        throw new ValidationError('otp', newData.otp);
 
     // ? Ensure OTPs remain unique
     if(newData.otp !== '' && newData.otp != oldData?.otp && getData(`/otp->id/${newData.otp}`))
-        throw new Error(`otp is invalid, generate another`);
+        throw new ValidationError(`otp is invalid, generate another`);
 
-    return { oldData: deepFreeze(oldData || {}), newData: deepFreeze(newData) };
+    return { oldData: (oldData || {}) as Partial<User>, newData: newData };
 };
 
 /**
@@ -219,13 +235,13 @@ const sanitizeUserData = ({ userId, data }) => {
  * TODO: Hashed password will be salted server-side with the username:
  * TODO: `hashedPassword = SHA256(username + password)`.
  */
-export function createUser(username: string, password: string, data?: Record<string, unknown>): number {
-    const userId = getData(`/nextUserId`);
+export function createUser(username: string, password: string, type: UserType, data?: Record<string, unknown>) {
+    const userId = getData(`/nextUserId`) as number;
 
     if(!userId)
-        throw new Error('failed to acquire next user id');
+        throw new AppError('failed to acquire next user id');
 
-    const { newData } = sanitizeUserData({ data: { username, password, ...data }});
+    const { newData } = sanitizeUserData({ data: { ...data, username, password, type }});
 
     putData(`/users/${userId}`, newData);
     putData(`/username->id/${username}`, userId);
@@ -240,24 +256,39 @@ export function createUser(username: string, password: string, data?: Record<str
  * 
  * @param {*} userId 
  */
-export function getUserIdFromUsername(username: string): number {
-    return getData(`/username->id/${username}`);
+export function getUserIdFromUsername(username: string) {
+    const data = getData(`/username->id/${username}`) as number;
+
+    if(!data)
+        throw new NotFoundError();
+
+    return data;
 }
 
 /**
  * 
  * @param {*} email 
  */
-export function getUserIdFromEmail(email: string): number {
-    return getData(`/email->id/${email}`);
+export function getUserIdFromEmail(email: string) {
+    const data = getData(`/email->id/${email}`) as string;
+
+    if(!data)
+        throw new NotFoundError();
+
+    return data;
 }
 
 /**
  * 
  * @param {*} email 
  */
-export function getUserIdFromOTP(otp: string): number {
-    return getData(`/otp->id/${otp}`);
+export function getUserIdFromOTP(otp: string) {
+    const data = getData(`/otp->id/${otp}`) as string;
+
+    if(!data)
+        throw new NotFoundError();
+
+    return data;
 }
 
 /**
@@ -267,8 +298,8 @@ export function getUserIdFromOTP(otp: string): number {
  * ! of a user object is set to `true`. This function, however, performs "hard
  * ! deletes". User data will be destroyed!
  */
-export function deleteUser(userId: number): void {
-    const oldData = getData(`/users/${userId}`);
+export function deleteUser(userId: number) {
+    const oldData = getData(`/users/${userId}`) as User;
 
     if(oldData) {
         delData(`/users/${userId}`);
@@ -282,7 +313,7 @@ export function deleteUser(userId: number): void {
  * 
  * @param {*} userId
  */
-export function doesUserIdExist(userId: number): boolean {
+export function doesUserIdExist(userId: number) {
     return !!getData(`/users/${userId}`);
 }
 
@@ -290,7 +321,7 @@ export function doesUserIdExist(userId: number): boolean {
  * 
  * @param {*} username
  */
-export function doesUsernameExist(username: string): boolean {
+export function doesUsernameExist(username: string) {
     return !!getData(`/username->id/${username}`);
 }
 
@@ -298,7 +329,7 @@ export function doesUsernameExist(username: string): boolean {
  * 
  * @param {*} email
  */
-export function doesEmailExist(email: string): boolean {
+export function doesEmailExist(email: string) {
     return !!getData(`/email->id/${email}`);
 }
 
@@ -306,53 +337,56 @@ export function doesEmailExist(email: string): boolean {
  * 
  * @param {*} username 
  */
-export function getUserData(userId: number): Record<string, unknown> {
-    const { otp, ...data } = getData(`/users/${userId}`) || {};
+export function getUser(userId: number) {
+    const { otp, ...data } = getData(`/users/${userId}`) as User || {};
 
     if(!data.username)
-        return deepFreeze({});
+        throw new NotFoundError();
 
     const root = getData(`/rootUserId`) == userId;
 
-    return deepFreeze({
+    return {
         ...data,
         // ? Override any data with hardcoded values if user is root
-        ...(root ? rootHardcodedData: {}),
+        ...(root ? rootHardcodedData : {}),
         root,
         userId: userId,
         // ? Tell the client to go into debugging mode when we do
-        debugging: process.env.APP_ENV != 'production'
-    });
+        debugging: getEnv().NODE_ENV != 'production'
+    } as AugmentedUser;
 }
 
 /**
  * 
  * @param {*} username 
  */
-export function getUserPublicData(userId: number): Record<string, unknown> {
-    const data = getData(`/users/${userId}`);
+export function getPublicUser(userId: number) {
+    const data = getData(`/users/${userId}`) as User;
     const { username, type } = data || {};
 
-    return deepFreeze(!data ? {} : { userId, username, type });
+    if(!data)
+        throw new NotFoundError();
+
+    return { userId, username, type };
 }
 
 /**
  * 
  * @param {*} username 
  */
-export function getUsersPublicData(): Record<string, unknown> {
-    return deepFreeze(Object.entries(getData(`/users`) || {}).map(([ userId, { username, type } ]) => ({
+export function getPublicUsers() {
+    return Object.entries<User>(getData(`/users`) as Users || {}).map(([ userId, { username, type } ]) => ({
         userId,
         username,
         type
-    })));
+    }));
 }
 
 /**
  * 
  * @param {*} username 
  */
-export function mergeUserData(userId: number, data: Record<string, unknown>): void {
+export function mergeUserData(userId: number, data: Record<string, unknown>) {
     const { oldData, newData } = sanitizeUserData({ userId, data });
     putData(`/users/${userId}`, newData);
 
@@ -378,23 +412,31 @@ export function mergeUserData(userId: number, data: Record<string, unknown>): vo
  * ? Note: IDs are guaranteed to be above 0, so a -1 id (used below) will always
  * ? return null!
  */
-export function areValidCredentials(username: string, password: string): boolean {
-    const data = getUserData(getUserIdFromUsername(username) || -1);
-    return !!data.userId && password == data.password && !data.deleted;
+export function areValidCredentials(username: string, password: string) {
+    try {
+        const data = getUser(getUserIdFromUsername(username) || -1);
+        return !data.deleted && password == data.password;
+    }
+
+    catch(e) {
+        return false;
+    }
 }
 
 /**
- * TODO: returns OTP on success or null on failure
  * @param {*} userId 
  */
-export function generateOTPFor(userId: number): string {
+export function generateOTPFor(userId: number) {
+    const data = getData(`/users/${userId}`) as User;
     let otp = null;
-    const data = getData(`/users/${userId}`);
 
     if(data && !data.deleted) {
         otp = genRndString({ length: otpStringLength, type: 'url-safe' });
         mergeUserData(userId, { otp });
     }
+
+    if(!otp)
+        throw new AppError('OTP generation failed');
 
     return otp;
 }
@@ -403,7 +445,7 @@ export function generateOTPFor(userId: number): string {
  * TODO: deletes OTP from index and from user account information
  * @param {*} userId 
  */
-export function clearOTPFor(userId: number): void {
+export function clearOTPFor(userId: number) {
     const data = getData(`/users/${userId}`);
     data && mergeUserData(userId, { otp: '' });
 }

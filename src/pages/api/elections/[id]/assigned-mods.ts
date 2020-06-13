@@ -3,7 +3,7 @@ import { handleAuthedEndpoint } from 'universe/backend/middleware'
 import type { NextApiResponse } from 'next'
 import type { NextSessionRequest } from 'multiverse/simple-auth-session'
 
-export default async function(req: NextSessionRequest, res: NextApiResponse): void {
+export default async function(req: NextSessionRequest, res: NextApiResponse) {
     await handleAuthedEndpoint(async () => {
         const { id: electionId } = req.query;
 

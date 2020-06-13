@@ -20,7 +20,7 @@ export default async function(req: NextSessionRequest, res: NextApiResponse) {
 
                 // * In real life, we'd send this as an email link at this point
                 // eslint-disable-next-line no-console
-                otp && console.info(`otp   - new OTP link generated for userId "${userId}"\n        ` +
+                console.info(`otp   - new OTP link generated for userId "${userId}"\n        ` +
                     `--> ${req.headers.host}/change-password/${otp}`);
             }
         }

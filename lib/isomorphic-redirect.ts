@@ -34,7 +34,9 @@ export const frontendRedirect = (location: string, args?: FrontendRedirectArgs) 
     // ? Ensure we're not dealing with a network-path reference (https://stackoverflow.com/q/3583103/1367414)
     (!args?.bypassRouter && location[0] == '/' && location[1] != '/')
         ? Router[args?.replace ? 'replace' : 'push'](location)
-        : window.location = location as Location;
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore
+        : window.location = location;
 };
 
 /**

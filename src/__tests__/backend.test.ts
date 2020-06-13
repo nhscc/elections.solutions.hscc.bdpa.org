@@ -1,6 +1,6 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment */
 import { JsonDB as DummyDB } from 'node-json-db';
 import { Config as DummyDBConfig } from 'node-json-db/dist/lib/JsonDBConfig'
-import { UserTypes } from 'types/global'
 import tmpDir from 'temp-dir'
 import del from 'del'
 import cpFile from 'cp-file'
@@ -8,160 +8,161 @@ import loadJsonFile from 'load-json-file'
 
 import * as backend from 'universe/backend'
 
+import type { Database } from 'types/global'
+
 const dbPath = `${tmpDir}/2019-dummy.db.json`;
 const defaultDbPath = `${__dirname}/../../app.db.default.json`;
 
 let db = null;
 let defaultNextId = 0;
 
-const getRawDB = () => loadJsonFile(dbPath);
+const getRawDB = (): Promise<Database> => loadJsonFile(dbPath) || (() => { throw new Error('DB not found!') })();
 
 beforeEach(async () => {
     await del(dbPath, { force: true });
     await cpFile(defaultDbPath, dbPath);
     backend.setDB(db = new DummyDB(new DummyDBConfig(dbPath, true, true)));
-    defaultNextId = (await getRawDB())?.nextUserId;
+    defaultNextId = (await getRawDB()).nextUserId;
 });
 
 describe('createUser', () => {
     it('stores new credentials', async () => {
-        backend.createUser('testuser', 't');
+        backend.createUser('testuser', 't', 'voter');
         expect((await getRawDB())?.users[defaultNextId].password).toBe('t');
     });
 
     it('increments nextUserId counter', async () => {
-        backend.createUser('testuser', 't');
+        backend.createUser('testuser', 't', 'voter');
         expect((await getRawDB())?.nextUserId).toBe(defaultNextId + 1);
     });
 
     it("returns the new user's id", async () => {
-        expect(backend.createUser('testuser', 't')).toBe(defaultNextId);
+        expect(backend.createUser('testuser', 't', 'voter')).toBe(defaultNextId);
     });
 
     it('maps new username to new id', async () => {
-        backend.createUser('testuser', 't');
+        backend.createUser('testuser', 't', 'voter');
         expect((await getRawDB())?.['username->id']['testuser']).toBe(defaultNextId);
     });
 
     it('maps new user to email if given', async () => {
-        const newId = backend.createUser('testuser', 't', { email: 'test@email.com' });
+        const newId = backend.createUser('testuser', 't', 'voter', { email: 'test@email.com' });
         expect((await getRawDB())?.['email->id']['test@email.com']).toBe(newId);
     });
 
     it('maps new user to otp if given', async () => {
-        const newId = backend.createUser('testuser', 't', { otp: 'test-otp' });
+        const newId = backend.createUser('testuser', 't', 'voter', { otp: 'test-otp' });
         expect((await getRawDB())?.['otp->id']['test-otp']).toBe(newId);
     });
 
     it('sets new user type to UserTypes.default when type is not specified', async () => {
-        const newId = backend.createUser('testuser', 't');
-        expect((await getRawDB())?.users[newId].type).toBe(UserTypes.default);
+        const newId = backend.createUser('testuser', 't', 'voter');
+        expect((await getRawDB())?.users[newId].type).toBe('voter');
     });
 
     it('adds valid user properties to newly created user', async () => {
-        const newId = backend.createUser('testuser', 'w', { type: UserTypes.reporter, name: { first: 'tre', last: 'giles' }});
+        const newId = backend.createUser('testuser', 'w', 'reporter', { name: { first: 'tre', last: 'giles' }});
 
         expect((await getRawDB())?.users[newId].name).toStrictEqual({ first: 'tre', last: 'giles' });
-        expect((await getRawDB())?.users[newId].type).toBe(UserTypes.reporter);
+        expect((await getRawDB())?.users[newId].type).toBe('reporter');
     });
 
     it('throws on non-existent user property', async () => {
-        expect(() => backend.createUser('testuser', 'w', { yes: 'no' })).toThrow();
+        expect(() => backend.createUser('testuser', 'w', 'voter', { yes: 'no' })).toThrow();
     });
 
     it('does not allow violations of uniqueness invariants', async () => {
-        const { username, email } = backend.getUserData(2);
-        backend.createUser('testuser', 't', { otp: 'fake-otp' });
+        const { username, email } = backend.getUser(2);
+        backend.createUser('testuser', 't', 'voter', { otp: 'fake-otp' });
 
-        expect(() => backend.createUser(username, 'p')).toThrow();
-        expect(() => backend.createUser('testuser-two', 'p', { email })).toThrow();
-        expect(() => backend.createUser('testuser-two', 'p', { email: 'not-taken@email.com' })).not.toThrow();
-        expect(() => backend.createUser('testuser-three', 'p', { otp: 'fake-otp' })).toThrow();
-        expect(() => backend.createUser('testuser-three', 'p', { otp: 'real-otp' })).not.toThrow();
-    });
-
-    it('does not allow username or password to be given as arguments twice', async () => {
-        backend.createUser('testuser', 'p')
-        expect(() => backend.createUser('testuser', 'p')).toThrow();
+        expect(() => backend.createUser(username, 'p', 'voter')).toThrow();
+        expect(() => backend.createUser('testuser-two', 'p', 'voter', { email })).toThrow();
+        expect(() => backend.createUser('testuser-two', 'p', 'voter', { email: 'not-taken@email.com' })).not.toThrow();
+        expect(() => backend.createUser('testuser-three', 'p', 'voter', { otp: 'fake-otp' })).toThrow();
+        expect(() => backend.createUser('testuser-three', 'p', 'voter', { otp: 'real-otp' })).not.toThrow();
+        expect(() => backend.createUser('testuser-four', 'p', 'voter', { email })).toThrow();
     });
 
     describe('throws on invalid user properties', () => {
-        test('non-string username', () => expect(() => backend.createUser(false, 'w')).toThrow());
-        test('too-short username', () => expect(() => backend.createUser('z'.repeat(backend.minUsernameLength - 1), 'w')).toThrow());
-        test('too-long username', () => expect(() => backend.createUser('a'.repeat(backend.maxUsernameLength + 1), 'w')).toThrow());
-        test('username with bad characters 1', () => expect(() => backend.createUser('!@#$', 'w')).toThrow());
-        test('username with bad characters 2', () => expect(() => backend.createUser('bro111', 'w')).toThrow());
-        test('non-unique username', () => expect(() => backend.createUser('user-root', 'w')).toThrow());
-        test('non-string password', () => expect(() => backend.createUser('testuser', true)).toThrow());
+        // @ts-ignore
+        test('non-string username', () => expect(() => backend.createUser(false, 'w', 'voter')).toThrow());
+        test('too-short username', () => expect(() => backend.createUser('z'.repeat(backend.minUsernameLength - 1), 'w', 'voter')).toThrow());
+        test('too-long username', () => expect(() => backend.createUser('a'.repeat(backend.maxUsernameLength + 1), 'w', 'voter')).toThrow());
+        test('username with bad characters 1', () => expect(() => backend.createUser('!@#$', 'w', 'voter')).toThrow());
+        test('username with bad characters 2', () => expect(() => backend.createUser('bro111', 'w', 'voter')).toThrow());
+        test('non-unique username', () => expect(() => backend.createUser('user-root', 'w', 'voter')).toThrow());
+        // @ts-ignore
+        test('non-string password', () => expect(() => backend.createUser('testuser', true, 'voter')).toThrow());
         // TODO: ensure passwords are proper (i.e. expected ciphertext length)
-        test('illegal type', () => expect(() => backend.createUser('testuser', 't', { type: 'bad' })).toThrow());
-        test('(legal firstLogin)', () => expect(() => backend.createUser('testuser', 't', { firstLogin: false })).not.toThrow());
-        test('illegal lastLogin object 1', () => expect(() => backend.createUser('testuser', 't', { lastLogin: null })).toThrow());
-        test('illegal lastLogin object 2', () => expect(() => backend.createUser('testuser', 't', { lastLogin: { ip: '', time: null, cast: '' }})).toThrow());
-        test('(legal lastLogin object 1)', () => expect(() => backend.createUser('testuser', 't', { lastLogin: {} })).not.toThrow());
-        test('(legal lastLogin object 2)', () => expect(() => backend.createUser('testuser', 't', { lastLogin: { time: null }})).not.toThrow());
-        test('(legal lastLogin object 3)', () => expect(() => backend.createUser('testuser', 't', { lastLogin: { time: 5 }})).not.toThrow());
-        test('illegal name object 1', () => expect(() => backend.createUser('testuser', 't', { name: null })).toThrow());
-        test('illegal name object 2', () => expect(() => backend.createUser('testuser', 't', { name: { first: '', last: '', cast: '' }})).toThrow());
-        test('(legal name object 1)', () => expect(() => backend.createUser('testuser', 't', { name: {} })).not.toThrow());
-        test('(legal name object 2)', () => expect(() => backend.createUser('testuser', 't', { name: { first: '' }})).not.toThrow());
-        test('illegal elections object 1', () => expect(() => backend.createUser('testuser', 't', { elections: null })).toThrow());
-        test('illegal elections object 2', () => expect(() => backend.createUser('testuser', 't', { elections: { moderating: [], fake: '' }})).toThrow());
-        test('illegal elections object 3', () => expect(() => backend.createUser('testuser', 't', { elections: { moderating: '' }})).toThrow());
-        test('illegal elections object 4', () => expect(() => backend.createUser('testuser', 't', { elections: { moderating: ['x'] }})).toThrow());
-        test('(legal elections object 1)', () => expect(() => backend.createUser('testuser', 't', { elections: {} })).not.toThrow());
-        test('(legal elections object 2)', () => expect(() => backend.createUser('testuser', 't', { elections: { eligible: [], moderating: [5] }})).not.toThrow());
-        test('invalid email 1', () => expect(() => backend.createUser('testuser', 't', { email: false })).toThrow());
-        test('invalid email 2', () => expect(() => backend.createUser('testuser', 't', { email: 'no@.' })).toThrow());
-        test('invalid phone 1', () => expect(() => backend.createUser('testuser', 't', { phone: false })).toThrow());
-        test('invalid phone 2', () => expect(() => backend.createUser('testuser', 't', { phone: 'a'.repeat(backend.expectedPhoneNumberLength) })).toThrow());
-        test('invalid phone 3', () => expect(() => backend.createUser('testuser', 't', { phone: '123456789' })).toThrow());
-        test('non-string address', () => expect(() => backend.createUser('testuser', 't', { address: null })).toThrow());
-        test('non-string city', () => expect(() => backend.createUser('testuser', 't', { city: true })).toThrow());
-        test('non-string state', () => expect(() => backend.createUser('testuser', 't', { state: 0 })).toThrow());
-        test('non-number zip 1', () => expect(() => backend.createUser('testuser', 't', { zip: false })).toThrow());
-        test('non-number zip 2', () => expect(() => backend.createUser('testuser', 't', { zip: 'a'.repeat(backend.expectedZipLength) })).toThrow());
-        test('non-number zip 3', () => expect(() => backend.createUser('testuser', 't', { zip: '0' })).toThrow());
-        test('non-string otp', () => expect(() => backend.createUser('testuser', 't', { otp: null })).toThrow());
+        // @ts-ignore
+        test('illegal type', () => expect(() => backend.createUser('testuser', 't', 'bad')).toThrow());
+        test('(legal firstLogin)', () => expect(() => backend.createUser('testuser', 't', 'voter', { firstLogin: false })).not.toThrow());
+        test('illegal lastLogin object 1', () => expect(() => backend.createUser('testuser', 't', 'voter', { lastLogin: null })).toThrow());
+        test('illegal lastLogin object 2', () => expect(() => backend.createUser('testuser', 't', 'voter', { lastLogin: { ip: '', time: null, cast: '' }})).toThrow());
+        test('(legal lastLogin object 1)', () => expect(() => backend.createUser('testuser', 't', 'voter', { lastLogin: {} })).not.toThrow());
+        test('(legal lastLogin object 2)', () => expect(() => backend.createUser('testuser', 't', 'voter', { lastLogin: { time: null }})).not.toThrow());
+        test('(legal lastLogin object 3)', () => expect(() => backend.createUser('testuser', 't', 'voter', { lastLogin: { time: 5 }})).not.toThrow());
+        test('illegal name object 1', () => expect(() => backend.createUser('testuser', 't', 'voter', { name: null })).toThrow());
+        test('illegal name object 2', () => expect(() => backend.createUser('testuser', 't', 'voter', { name: { first: '', last: '', cast: '' }})).toThrow());
+        test('(legal name object 1)', () => expect(() => backend.createUser('testuser', 't', 'voter', { name: {} })).not.toThrow());
+        test('(legal name object 2)', () => expect(() => backend.createUser('testuser', 't', 'voter', { name: { first: '' }})).not.toThrow());
+        test('illegal elections object 1', () => expect(() => backend.createUser('testuser', 't', 'voter', { elections: null })).toThrow());
+        test('illegal elections object 2', () => expect(() => backend.createUser('testuser', 't', 'voter', { elections: { moderating: [], fake: '' }})).toThrow());
+        test('illegal elections object 3', () => expect(() => backend.createUser('testuser', 't', 'voter', { elections: { moderating: '' }})).toThrow());
+        test('illegal elections object 4', () => expect(() => backend.createUser('testuser', 't', 'voter', { elections: { moderating: [1234] }})).toThrow());
+        test('(legal elections object 1)', () => expect(() => backend.createUser('testuser', 't', 'voter', { elections: {} })).not.toThrow());
+        test('(legal elections object 2)', () => expect(() => backend.createUser('testuser', 't', 'voter', { elections: { eligible: [], moderating: ['5'] }})).not.toThrow());
+        test('invalid email 1', () => expect(() => backend.createUser('testuser', 't', 'voter', { email: false })).toThrow());
+        test('invalid email 2', () => expect(() => backend.createUser('testuser', 't', 'voter', { email: 'no@.' })).toThrow());
+        test('invalid phone 1', () => expect(() => backend.createUser('testuser', 't', 'voter', { phone: false })).toThrow());
+        test('invalid phone 2', () => expect(() => backend.createUser('testuser', 't', 'voter', { phone: 'a'.repeat(backend.expectedPhoneNumberLength) })).toThrow());
+        test('invalid phone 3', () => expect(() => backend.createUser('testuser', 't', 'voter', { phone: '123456789' })).toThrow());
+        test('non-string address', () => expect(() => backend.createUser('testuser', 't', 'voter', { address: null })).toThrow());
+        test('non-string city', () => expect(() => backend.createUser('testuser', 't', 'voter', { city: true })).toThrow());
+        test('non-string state', () => expect(() => backend.createUser('testuser', 't', 'voter', { state: 0 })).toThrow());
+        test('non-number zip 1', () => expect(() => backend.createUser('testuser', 't', 'voter', { zip: false })).toThrow());
+        test('non-number zip 2', () => expect(() => backend.createUser('testuser', 't', 'voter', { zip: 'a'.repeat(backend.expectedZipLength) })).toThrow());
+        test('non-number zip 3', () => expect(() => backend.createUser('testuser', 't', 'voter', { zip: '0' })).toThrow());
+        test('non-string otp', () => expect(() => backend.createUser('testuser', 't', 'voter', { otp: null })).toThrow());
     });
 });
 
 describe('getUserIdFromUsername', () => {
     it('gets user id if username exists', async () => {
-        backend.createUser('testuser', 't');
+        backend.createUser('testuser', 't', 'voter');
         expect(backend.getUserIdFromUsername('testuser')).toBe(defaultNextId);
     });
 
-    it('returns null if username does not exist', async () => {
-        expect(backend.getUserIdFromUsername('testuser')).toBeNull();
+    it('throws if username does not exist', async () => {
+        expect(() => backend.getUserIdFromUsername('testuser')).toThrow();
     });
 });
 
 describe('getUserIdFromEmail', () => {
     it('gets user id if email exists', async () => {
-        backend.createUser('testuser', 't', { email: 'test@test.test' });
+        backend.createUser('testuser', 't', 'voter', { email: 'test@test.test' });
         expect(backend.getUserIdFromEmail('test@test.test')).toBe(defaultNextId);
     });
 
-    it('returns null if email does not exist', async () => {
-        expect(backend.getUserIdFromEmail('test@test.test')).toBeNull();
+    it('throws if email does not exist', async () => {
+        expect(() => backend.getUserIdFromEmail('test@test.test')).toThrow();
     });
 });
 
 describe('getUserIdFromOTP', () => {
     it('gets user id if OTP exists', async () => {
-        const newId = backend.createUser('testuser', 't', { otp: 'real-otp' });
+        const newId = backend.createUser('testuser', 't', 'voter', { otp: 'real-otp' });
         expect(backend.getUserIdFromOTP('real-otp')).toBe(newId);
     });
 
-    it('returns null if OTP does not exist', async () => {
-        expect(backend.getUserIdFromOTP('fake-otp')).toBeNull();
+    it('throws if OTP does not exist', async () => {
+        expect(() => backend.getUserIdFromOTP('fake-otp')).toThrow();
     });
 });
 
 describe('doesUserIdExist', () => {
     it('returns `true` when id exists', async () => {
-        backend.createUser('testuser', 't');
+        backend.createUser('testuser', 't', 'voter');
         expect(backend.doesUserIdExist(defaultNextId)).toBe(true);
     });
 
@@ -172,7 +173,7 @@ describe('doesUserIdExist', () => {
 
 describe('doesUsernameExist', () => {
     it('returns `true` when username exists', async () => {
-        backend.createUser('testuser', 't');
+        backend.createUser('testuser', 't', 'voter');
         expect(backend.doesUsernameExist('testuser')).toBe(true);
     });
 
@@ -183,7 +184,7 @@ describe('doesUsernameExist', () => {
 
 describe('doesEmailExist', () => {
     it('returns `true` when email exists', async () => {
-        backend.createUser('testuser', 't', { email: 'test@test.test' });
+        backend.createUser('testuser', 't', 'voter', { email: 'test@test.test' });
         expect(backend.doesEmailExist('test@test.test')).toBe(true);
     });
 
@@ -194,8 +195,8 @@ describe('doesEmailExist', () => {
 
 describe('deleteUser', () => {
     it('deletes (only) the specified id', () => {
-        backend.createUser('testuser', 't');
-        backend.createUser('testuser-two', 'u');
+        backend.createUser('testuser', 't', 'voter');
+        backend.createUser('testuser-two', 'u', 'voter');
         backend.deleteUser(defaultNextId);
 
         expect(backend.doesUserIdExist(defaultNextId)).toBe(false);
@@ -203,8 +204,8 @@ describe('deleteUser', () => {
     });
 
     it('deletes (only) the specified username->id index', () => {
-        backend.createUser('testuser', 't');
-        backend.createUser('testuser-two', 'u');
+        backend.createUser('testuser', 't', 'voter');
+        backend.createUser('testuser-two', 'u', 'voter');
         backend.deleteUser(defaultNextId);
 
         expect(backend.doesUsernameExist('testuser')).toBe(false);
@@ -212,8 +213,8 @@ describe('deleteUser', () => {
     });
 
     it('deletes (only) the specified email->id index', () => {
-        backend.createUser('testuser', 't', { email: 'email1@email.email' });
-        backend.createUser('testuser-two', 'u', { email: 'email2@email.email' });
+        backend.createUser('testuser', 't', 'voter', { email: 'email1@email.email' });
+        backend.createUser('testuser-two', 'u', 'voter', { email: 'email2@email.email' });
         backend.deleteUser(defaultNextId);
 
         expect(backend.doesEmailExist('email1@email.email')).toBe(false);
@@ -221,107 +222,107 @@ describe('deleteUser', () => {
     });
 
     it('deletes (only) the specified otp->id index', () => {
-        backend.createUser('testuser', 't', { otp: 'test-otp' });
-        const newId = backend.createUser('testuser-two', 'u', { otp: 'test-otp2' });
+        backend.createUser('testuser', 't', 'voter', { otp: 'test-otp' });
+        const newId = backend.createUser('testuser-two', 'u', 'voter', { otp: 'test-otp2' });
         backend.deleteUser(defaultNextId);
 
-        expect(backend.getUserIdFromOTP('test-otp')).toBe(null);
+        expect(() => backend.getUserIdFromOTP('test-otp')).toThrow();
         expect(backend.getUserIdFromOTP('test-otp2')).toBe(newId);
     });
 
-    it('does not throw on non-existent credentials', () => {
-        backend.deleteUser(-1);
-
-        expect(backend.doesUserIdExist('testuser')).toBe(false);
+    it('does not throw on non-existent id', () => {
+        expect(() => backend.deleteUser(-1)).not.toThrow();
     });
 });
 
 describe('getUserData', () => {
     it('debugging gets set properly', async () => {
-        process.env.APP_ENV = 'development';
-        expect(backend.getUserData(1).debugging).toBe(true);
-        process.env.APP_ENV = 'production';
-        expect(backend.getUserData(1).debugging).toBe(false);
+        // @ts-ignore
+        process.env.NODE_ENV = 'development';
+        expect(backend.getUser(1).debugging).toBe(true);
+        // @ts-ignore
+        process.env.NODE_ENV = 'production';
+        expect(backend.getUser(1).debugging).toBe(false);
     });
 
     it('returns id property in data object', async () => {
-        const newId = backend.createUser('testuser', 't');
-        const data = backend.getUserData(newId);
+        const newId = backend.createUser('testuser', 't', 'voter');
+        const data = backend.getUser(newId);
 
         expect(data.userId).toBe(newId);
     });
 
     it('returns `root: true` if user is root', async () => {
-        const newId = backend.createUser('testuser', 't');
-        const data = backend.getUserData(newId);
-        const data2 = backend.getUserData(1);
+        const newId = backend.createUser('testuser', 't', 'voter');
+        const data = backend.getUser(newId);
+        const data2 = backend.getUser(1);
 
         expect(data.root).toBe(false);
         expect(data2.root).toBe(true);
     });
 
     it('returns hardcoded values if user is root', async () => {
-        const newId = backend.createUser('testuser', 't', { restricted: true, deleted: true });
-        let data = backend.getUserData(newId);
+        const newId = backend.createUser('testuser', 't', 'voter', { restricted: true, deleted: true });
+        let data = backend.getUser(newId);
 
         expect(data.root).toBe(false);
-        expect(data.type).not.toBe(UserTypes.administrator);
+        expect(data.type).not.toBe('administrator');
 
         db.push('/rootUserId', newId);
-        data = backend.getUserData(newId);
+        data = backend.getUser(newId);
 
         expect(data.root).toBe(true);
         expect(data.restricted).toBe(false);
         expect(data.deleted).toBe(false);
-        expect(data.type).toBe(UserTypes.administrator);
+        expect(data.type).toBe('administrator');
     });
 
-    it('returns `{}` if userId does not exist', async () => {
-        expect(backend.getUserData(-1)).toStrictEqual({});
+    it('throws if userId does not exist', async () => {
+        expect(() => backend.getUser(-1)).toThrow();
     });
 
     it('never returns OTP', async () => {
-        const newId = backend.createUser('testuser', 't', { otp: 'test-otp' });
-        expect(backend.getUserData(newId).otp).toBeUndefined();
+        const newId = backend.createUser('testuser', 't', 'voter', { otp: 'test-otp' });
+        expect(backend.getUser(newId).otp).toBeUndefined();
     });
 });
 
 describe('getUserPublicData', () => {
     it("returns only a safe subset of a user's data", async () => {
-        const newId = backend.createUser('testuser', 't');
-        const { userId, username, type, ...rest } = backend.getUserPublicData(newId);
+        const newId = backend.createUser('testuser', 't', 'reporter');
+        const { userId, username, type, ...rest } = backend.getPublicUser(newId);
 
         expect(userId).toBe(newId);
         expect(username).toBe('testuser');
-        expect(type).toBe(UserTypes.default);
+        expect(type).toBe('reporter');
         expect(rest).toStrictEqual({});
     });
 
-    it('returns `{}` if userId does not exist', async () => {
-        expect(backend.getUserPublicData(-1)).toStrictEqual({});
+    it('throws if userId does not exist', async () => {
+        expect(() => backend.getPublicUser(-1)).toThrow();
     });
 });
 
 describe('getUsersPublicData', () => {
     it('returns only a safe subset of user data', async () => {
-        const newId = backend.createUser('testuser', 't');
-        const data = backend.getUsersPublicData();
+        const newId = backend.createUser('testuser', 't', 'voter');
+        const data = backend.getPublicUsers();
         expect(Object.values(data).every(item => Object.keys(item).length == 3)).toBe(true);
         expect(data[newId - 1].username).toBe('testuser');
     });
 
     it('returns all users', async () => {
-        const newId = backend.createUser('testuser', 't');
-        expect(Object.keys(backend.getUsersPublicData()).length).toBe(newId);
+        const newId = backend.createUser('testuser', 't', 'voter');
+        expect(Object.keys(backend.getPublicUsers()).length).toBe(newId);
     });
 });
 
 describe('mergeUserData', () => {
     it("shallow merges the specified user's data", async () => {
-        const newId = backend.createUser('testuser', 't', { name: { first: 'tre', last: 'giles' }});
+        const newId = backend.createUser('testuser', 't', 'voter', { name: { first: 'tre', last: 'giles' }});
         backend.mergeUserData(newId, { name: { last: 'dickens' }});
         backend.mergeUserData(newId, { restricted: true });
-        const data = backend.getUserData(newId);
+        const data = backend.getUser(newId);
 
         expect(data.username).toEqual('testuser');
         expect(data.name).toStrictEqual({ first: 'tre', last: 'dickens' });
@@ -329,10 +330,10 @@ describe('mergeUserData', () => {
     });
 
     it('adds new username->id index when username is updated from empty', async () => {
-        const newId = backend.createUser('testuser', 't');
+        const newId = backend.createUser('testuser', 't', 'voter');
         backend.mergeUserData(newId, { username: 'testuser-two' });
 
-        const data = backend.getUserData(newId);
+        const data = backend.getUser(newId);
         const foundId = backend.getUserIdFromUsername('testuser-two');
 
         expect(data.username).toBe('testuser-two');
@@ -340,7 +341,7 @@ describe('mergeUserData', () => {
     });
 
     it('adds new email->id index when email is updated from empty', async () => {
-        const newId = backend.createUser('testuser', 't');
+        const newId = backend.createUser('testuser', 't', 'voter');
         backend.mergeUserData(newId, { email: 'shiny@new.email' });
         const foundId = backend.getUserIdFromEmail('shiny@new.email');
 
@@ -348,7 +349,7 @@ describe('mergeUserData', () => {
     });
 
     it('adds new otp->id index when otp is updated from empty', async () => {
-        const newId = backend.createUser('testuser', 't');
+        const newId = backend.createUser('testuser', 't', 'voter');
         backend.mergeUserData(newId, { otp: 'shiny-new-otp' });
         const foundId = backend.getUserIdFromOTP('shiny-new-otp');
 
@@ -356,21 +357,21 @@ describe('mergeUserData', () => {
     });
 
     it('deletes outdated username->id index when username is updated', async () => {
-        const newId = backend.createUser('testuser', 't');
+        const newId = backend.createUser('testuser', 't', 'voter');
         backend.mergeUserData(newId, { username: 'testuser-two' });
-        expect(backend.getUserIdFromUsername('testuser')).toBeNull();
+        expect(() => backend.getUserIdFromUsername('testuser')).toThrow();
     });
 
     it('deletes outdated email->id index when email is updated', async () => {
-        const newId = backend.createUser('testuser', 't', { email: 'stinky@old.email' });
+        const newId = backend.createUser('testuser', 't', 'voter', { email: 'stinky@old.email' });
         backend.mergeUserData(newId, { email: 'shiny@new.email' });
-        expect(backend.getUserIdFromEmail('stinky@old.email')).toBeNull();
+        expect(() => backend.getUserIdFromEmail('stinky@old.email')).toThrow();
     });
 
     it('deletes outdated otp->id index when otp is updated', async () => {
-        const newId = backend.createUser('testuser', 't', { otp: 'stinky-old-otp' });
+        const newId = backend.createUser('testuser', 't', 'voter', { otp: 'stinky-old-otp' });
         backend.mergeUserData(newId, { otp: 'shiny-new-otp' });
-        expect(backend.getUserIdFromOTP('stinky-old-otp')).toBeNull();
+        expect(() => backend.getUserIdFromOTP('stinky-old-otp')).toThrow();
     });
 
     it('throws when an invalid id is specified', async () => {
@@ -382,6 +383,7 @@ describe('mergeUserData', () => {
     it('does not throw and is noop on empty and null data', async () => {
         const predb = await getRawDB();
         expect(() => backend.mergeUserData(1, {})).not.toThrow();
+        // @ts-ignore
         expect(() => backend.mergeUserData(1, null)).not.toThrow();
         expect(await getRawDB())?.toStrictEqual(predb);
     });
@@ -391,8 +393,8 @@ describe('mergeUserData', () => {
     });
 
     it('does not allow violations of uniqueness invariants', async () => {
-        const { username, email } = backend.getUserData(2);
-        backend.createUser('testuser', 't', { otp: 'fake-otp' });
+        const { username, email } = backend.getUser(2);
+        backend.createUser('testuser', 't', 'voter', { otp: 'fake-otp' });
 
         expect(() => backend.mergeUserData(1, { username })).toThrow();
         expect(() => backend.mergeUserData(1, { email })).toThrow();
@@ -426,9 +428,9 @@ describe('mergeUserData', () => {
         test('illegal elections object 1', () => expect(() => backend.mergeUserData(1, { elections: null })).toThrow());
         test('illegal elections object 2', () => expect(() => backend.mergeUserData(1, { elections: { moderating: [], fake: '' }})).toThrow());
         test('illegal elections object 3', () => expect(() => backend.mergeUserData(1, { elections: { moderating: '' }})).toThrow());
-        test('illegal elections object 4', () => expect(() => backend.mergeUserData(1, { elections: { moderating: ['x'] }})).toThrow());
+        test('illegal elections object 4', () => expect(() => backend.mergeUserData(1, { elections: { moderating: ['x'] }})).not.toThrow());
         test('(legal elections object 1)', () => expect(() => backend.mergeUserData(1, { elections: {} })).not.toThrow());
-        test('(legal elections object 2)', () => expect(() => backend.mergeUserData(1, { elections: { eligible: [], moderating: [5] }})).not.toThrow());
+        test('(legal elections object 2)', () => expect(() => backend.mergeUserData(1, { elections: { eligible: [], moderating: [5] }})).toThrow());
         test('invalid email 1', () => expect(() => backend.mergeUserData(1, { email: false })).toThrow());
         test('invalid email 2', () => expect(() => backend.mergeUserData(1, { email: 'no@.' })).toThrow());
         test('invalid phone 1', () => expect(() => backend.mergeUserData(1, { phone: false })).toThrow());
@@ -446,12 +448,12 @@ describe('mergeUserData', () => {
 
 describe('areValidCredentials', () => {
     it('returns `true` when credentials are found', async () => {
-        backend.createUser('testuser', 't');
+        backend.createUser('testuser', 't', 'voter');
         expect(backend.areValidCredentials('testuser', 't')).toBe(true);
     });
 
     it('returns `false` when credentials are not found', async () => {
-        backend.createUser('testuser', 't');
+        backend.createUser('testuser', 't', 'voter');
 
         expect(backend.areValidCredentials('test', 't')).toBe(false);
         expect(backend.areValidCredentials('testuser', 'u')).toBe(false);
@@ -461,7 +463,7 @@ describe('areValidCredentials', () => {
     });
 
     it('returns `false` when credentials are deleted', async () => {
-        const newId = backend.createUser('testuser', 't');
+        const newId = backend.createUser('testuser', 't', 'voter');
         expect(backend.areValidCredentials('testuser', 't')).toBe(true);
         backend.mergeUserData(newId, { deleted: true });
         expect(backend.areValidCredentials('testuser', 't')).toBe(false);
@@ -470,7 +472,7 @@ describe('areValidCredentials', () => {
 
 describe('generateOTPFor', () => {
     it('generates OTP, updates OTP property, adds otp->id mapping, and returns otp for given userId', async () => {
-        const newId = backend.createUser('testuser', 't');
+        const newId = backend.createUser('testuser', 't', 'voter');
         const newOTP = backend.generateOTPFor(newId);
 
         expect((await getRawDB())?.users[newId].otp).toBe(newOTP);
@@ -478,7 +480,7 @@ describe('generateOTPFor', () => {
     });
 
     it('removes old OTP from index and user when generating new OTP', async () => {
-        const newId = backend.createUser('testuser', 't', { otp: 'stinky-old-otp' });
+        const newId = backend.createUser('testuser', 't', 'voter', { otp: 'stinky-old-otp' });
         const newOTP = backend.generateOTPFor(newId);
 
         expect(backend.getUserIdFromOTP(newOTP)).toBe(newId);
@@ -486,33 +488,33 @@ describe('generateOTPFor', () => {
 
         const newerOTP = backend.generateOTPFor(newId);
 
-        expect(backend.getUserIdFromOTP(newOTP)).toBeNull();
+        expect(() => backend.getUserIdFromOTP(newOTP)).toThrow();
         expect(backend.getUserIdFromOTP(newerOTP)).toBe(newId);
         expect((await getRawDB())?.users[newId].otp).toBe(newerOTP);
     });
 
-    it('returns `null` for invalid ids', async () => {
-        expect(backend.generateOTPFor(-1)).toBeNull();
+    it('throws for invalid ids', async () => {
+        expect(() => backend.generateOTPFor(-1)).toThrow();
     });
 
-    it('returns `null` when id points to deleted user', async () => {
-        const newId = backend.createUser('testuser', 't');
-        expect(backend.generateOTPFor(newId)).not.toBeNull();
+    it('throws when id points to deleted user', async () => {
+        const newId = backend.createUser('testuser', 't', 'voter');
+        expect(() => backend.generateOTPFor(newId)).not.toThrow();
         backend.mergeUserData(newId, { deleted: true });
-        expect(backend.generateOTPFor(newId)).toBeNull();
+        expect(() => backend.generateOTPFor(newId)).toThrow();
     });
 });
 
 describe('clearOTPFor', () => {
     it('resets OTP property and clears otp->id mapping (only) for given userId', async () => {
-        const newId = backend.createUser('testuser', 't');
-        const newId2 = backend.createUser('testuser-two', 't');
+        const newId = backend.createUser('testuser', 't', 'voter');
+        const newId2 = backend.createUser('testuser-two', 't', 'voter');
         const newOTP = backend.generateOTPFor(newId);
         const newOTP2 = backend.generateOTPFor(newId2);
 
         backend.clearOTPFor(newId);
 
-        expect(backend.getUserIdFromOTP(newOTP)).toBeNull();
+        expect(() => backend.getUserIdFromOTP(newOTP)).toThrow();
         expect(backend.getUserIdFromOTP(newOTP2)).toBe(newId2);
         expect((await getRawDB())?.users[newId].otp).toBe('');
         expect((await getRawDB())?.users[newId2].otp).toBe(newOTP2);
@@ -523,13 +525,13 @@ describe('clearOTPFor', () => {
     });
 
     it('does not throw if otp already cleared', async () => {
-        const newId = backend.createUser('testuser', 't', { otp: 'test-otp' });
+        const newId = backend.createUser('testuser', 't', 'voter', { otp: 'test-otp' });
         expect(() => backend.clearOTPFor(newId)).not.toThrow();
         expect(() => backend.clearOTPFor(newId)).not.toThrow();
     });
 
     it('does not throw on deleted user', async () => {
-        const newId = backend.createUser('testuser', 't');
+        const newId = backend.createUser('testuser', 't', 'voter');
         expect(() => backend.clearOTPFor(newId)).not.toThrow();
         backend.mergeUserData(newId, { deleted: true });
         expect(() => backend.clearOTPFor(newId)).not.toThrow();

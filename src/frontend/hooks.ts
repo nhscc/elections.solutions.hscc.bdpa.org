@@ -1,28 +1,34 @@
 import { useState } from 'react'
 import { useIsomorphicLayoutEffect as useLayoutEffect } from 'react-use'
-import { UserTypes } from 'types/global'
 import { defaultSWRFetcher } from 'universe/frontend'
+import { FrontendHookError } from 'universe/backend/error'
 import { fetchEndpoint } from 'multiverse/fetch-endpoint'
 import useSWR from 'swr'
+
+import type { AugmentedUser } from 'types/global'
 
 /**
  * TODO: isXYZ are null when unknown/loading, false when false, true when true
  */
-export function useUserType(): { isRoot: boolean, isAdmin: boolean, isModerator: boolean, isVoter: boolean, isReporter: boolean } {
-    const { data: user } = useSWR('/api/user', defaultSWRFetcher);
+export function useUserType() {
+    const { data, error } = useSWR('/api/user', defaultSWRFetcher);
+    const user: AugmentedUser = data || {};
 
-    const [ isRoot, setIsRoot ] = useState(null);
-    const [ isAdmin, setIsAdmin ] = useState(null);
-    const [ isModerator, setIsModerator ] = useState(null);
-    const [ isVoter, setIsVoter ] = useState(null);
-    const [ isReporter, setIsReporter ] = useState(null);
+    if(error)
+        throw new FrontendHookError(error);
+
+    const [ isRoot, setIsRoot ] = useState<boolean | null>(null);
+    const [ isAdmin, setIsAdmin ] = useState<boolean | null>(null);
+    const [ isModerator, setIsModerator ] = useState<boolean | null>(null);
+    const [ isVoter, setIsVoter ] = useState<boolean | null>(null);
+    const [ isReporter, setIsReporter ] = useState<boolean | null>(null);
 
     useLayoutEffect(() => {
-        setIsRoot(user?.root);
-        setIsAdmin(user?.type == UserTypes.administrator);
-        setIsModerator(user?.type == UserTypes.moderator);
-        setIsVoter(user?.type == UserTypes.voter);
-        setIsReporter(user?.type == UserTypes.reporter);
+        setIsRoot(user.root);
+        setIsAdmin(user.type == 'administrator');
+        setIsModerator(user.type == 'moderator');
+        setIsVoter(user.type == 'voter');
+        setIsReporter(user.type == 'reporter');
     }, [user]);
 
     return { isRoot, isAdmin, isModerator, isVoter, isReporter };
@@ -32,7 +38,7 @@ export function useUserType(): { isRoot: boolean, isAdmin: boolean, isModerator:
  * TODO: user is always an object, but will be empty if data is still loading.
  * TODO: Does not handle calling mutate()
  */
-export function useUser(): Record<string, unknown> {
+export function useUser() {
     const { data, error, mutate } = useSWR('/api/user', defaultSWRFetcher);
 
     // ? This code gives the user object a method hidden in the prototype chain,
@@ -43,7 +49,7 @@ export function useUser(): Record<string, unknown> {
             const { error: err } = await fetchEndpoint.put('/api/user', { body: JSON.stringify(o) });
             return { error: err };
         }
-    }), data);
+    }), data) as AugmentedUser;
 
     return { user, error, mutate };
 }

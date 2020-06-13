@@ -5,7 +5,7 @@ import { handleUnauthedEndpoint } from 'universe/backend/middleware'
 import {
     areValidCredentials,
     getUserIdFromUsername,
-    getUserData,
+    getUser,
     mergeUserData,
     clearOTPFor,
     getUserIdFromOTP,
@@ -53,7 +53,7 @@ export default async function(req: NextSessionRequest, res: NextApiResponse) {
     const ip = getClientIp(req);
 
     const ifUserIsUnrestrictedThenAuth = async (userId: number) => {
-        const user = getUserData(userId);
+        const user = getUser(userId);
 
         if(user.restricted)
             res.status(403).send({ error: 'this account is restricted' });

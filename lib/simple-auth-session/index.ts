@@ -8,8 +8,8 @@ export type NextParamsRR<T=Record<string, unknown>> = {
     res: NextApiResponse<T>;
 };
 
-export type NextSessionRequest = NextApiRequest & { session: { __sa: { authed: boolean }}};
-export type NextParamsRRWithSession = NextParamsRR & { req: NextSessionRequest };
+export type NextSessionRequest<T=unknown> = NextApiRequest & { session: { __sa: { authed: boolean }} & T};
+export type NextParamsRRWithSession<T=Record<string, unknown>> = NextParamsRR & { req: NextSessionRequest<T> };
 
 // TODO: document all of this
 let sessionOptions: Record<string, unknown>;

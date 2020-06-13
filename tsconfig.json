@@ -24,11 +24,11 @@
       "types/*": [
         "types/*"
       ],
-      "components": [
-        "/src/components/*"
+      "components/*": [
+        "src/components/*"
       ],
-      "rbc": [
-        "/node_modules/react-bulma-components/src/components/*"
+      "rbc/*": [
+        "node_modules/react-bulma-components/src/components/*"
       ]
     },
     "allowSyntheticDefaultImports": true,

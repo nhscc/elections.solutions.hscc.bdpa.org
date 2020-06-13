@@ -32,7 +32,7 @@ export function useRedirection({ endpointURI, redirectIf, redirectTo, redirectAr
         if(isUndefined(data))
             return;
 
-        if(!redirectTo || !redirectIf || !redirectIf(data, true))
+        if(!redirectTo || !redirectIf || !redirectIf(data || {}, true))
             setRedirecting(false);
 
         else {
