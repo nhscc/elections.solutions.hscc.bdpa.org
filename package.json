@@ -17,8 +17,8 @@
     "list-tasks": "npm run && echo \"Compiling gulp task list...\" && gulp --tasks",
     "repl": "rlwrap npx -p @babel/core -p @babel/node babel-node",
     "preinstall": "npx npm-force-resolutions",
-    "check-types": "(tsc || eslint .) && echo \"no problems detected!\"",
-    "reset-db": "rm app.db.json && cp app.db.default.json app.db.json"
+    "reset-db": "rm app.db.json && cp app.db.default.json app.db.json",
+    "check-types": "(command -v unbuffer >/dev/null && (unbuffer tsc && unbuffer eslint .) | less -R -FX || (tsc && eslint .)) && echo \"no problems detected!\""
   },
   "author": "Xunnamius",
   "license": "ISC",

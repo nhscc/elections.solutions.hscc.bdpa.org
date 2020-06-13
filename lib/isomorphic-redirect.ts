@@ -1,10 +1,10 @@
 import Router from 'next/router'
 import isServerSide from 'multiverse/is-server-side'
 
-import type { HTTPStatusCode } from 'types/global'
+import type { HttpStatusCode } from 'types/global'
 import type { NextApiResponse } from 'next'
 
-const DEFAULT_REDIRECT_STATUS: HTTPStatusCode = 301;
+const DEFAULT_REDIRECT_STATUS: HttpStatusCode = 301;
 
 export type FrontendRedirectArgs = {
     replace?: boolean;
@@ -13,7 +13,7 @@ export type FrontendRedirectArgs = {
 
 export type BackendRedirectArgs = {
     res: NextApiResponse;
-    status?: HTTPStatusCode;
+    status?: HttpStatusCode;
     immediate?: boolean;
 };
 
@@ -34,7 +34,7 @@ export const frontendRedirect = (location: string, args?: FrontendRedirectArgs) 
     // ? Ensure we're not dealing with a network-path reference (https://stackoverflow.com/q/3583103/1367414)
     (!args?.bypassRouter && location[0] == '/' && location[1] != '/')
         ? Router[args?.replace ? 'replace' : 'push'](location)
-        : window.location = location;
+        : window.location = location as Location;
 };
 
 /**

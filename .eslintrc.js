@@ -89,5 +89,5 @@ module.exports = {
             '.*/node_modules/.*',
         ]
     },
-    ignorePatterns: ['coverage', 'build']
+    ignorePatterns: ['coverage', 'build', '/gulpfile.js', '/next.config.js']
 };

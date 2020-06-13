@@ -12,7 +12,7 @@ export type NextSessionRequest = NextApiRequest & { session: { __sa: { authed: b
 export type NextParamsRRWithSession = NextParamsRR & { req: NextSessionRequest };
 
 // TODO: document all of this
-let sessionOptions: Record<string, unknown> | null = null;
+let sessionOptions: Record<string, unknown>;
 
 export function getGlobalSessionOptions(): typeof sessionOptions {
     return sessionOptions = sessionOptions || findPackageJSON(process.cwd()).next()?.value?.sessionOptions || {};

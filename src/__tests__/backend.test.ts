@@ -19,18 +19,18 @@ beforeEach(async () => {
     await del(dbPath, { force: true });
     await cpFile(defaultDbPath, dbPath);
     backend.setDB(db = new DummyDB(new DummyDBConfig(dbPath, true, true)));
-    defaultNextId = (await getRawDB()).nextUserId;
+    defaultNextId = (await getRawDB())?.nextUserId;
 });
 
 describe('createUser', () => {
     it('stores new credentials', async () => {
         backend.createUser('testuser', 't');
-        expect((await getRawDB()).users[defaultNextId].password).toBe('t');
+        expect((await getRawDB())?.users[defaultNextId].password).toBe('t');
     });
 
     it('increments nextUserId counter', async () => {
         backend.createUser('testuser', 't');
-        expect((await getRawDB()).nextUserId).toBe(defaultNextId + 1);
+        expect((await getRawDB())?.nextUserId).toBe(defaultNextId + 1);
     });
 
     it("returns the new user's id", async () => {
@@ -39,29 +39,29 @@ describe('createUser', () => {
 
     it('maps new username to new id', async () => {
         backend.createUser('testuser', 't');
-        expect((await getRawDB())['username->id']['testuser']).toBe(defaultNextId);
+        expect((await getRawDB())?.['username->id']['testuser']).toBe(defaultNextId);
     });
 
     it('maps new user to email if given', async () => {
         const newId = backend.createUser('testuser', 't', { email: 'test@email.com' });
-        expect((await getRawDB())['email->id']['test@email.com']).toBe(newId);
+        expect((await getRawDB())?.['email->id']['test@email.com']).toBe(newId);
     });
 
     it('maps new user to otp if given', async () => {
         const newId = backend.createUser('testuser', 't', { otp: 'test-otp' });
-        expect((await getRawDB())['otp->id']['test-otp']).toBe(newId);
+        expect((await getRawDB())?.['otp->id']['test-otp']).toBe(newId);
     });
 
     it('sets new user type to UserTypes.default when type is not specified', async () => {
         const newId = backend.createUser('testuser', 't');
-        expect((await getRawDB()).users[newId].type).toBe(backend.UserTypes.default);
+        expect((await getRawDB())?.users[newId].type).toBe(backend.UserTypes.default);
     });
 
     it('adds valid user properties to newly created user', async () => {
         const newId = backend.createUser('testuser', 'w', { type: backend.UserTypes.reporter, name: { first: 'tre', last: 'giles' }});
 
-        expect((await getRawDB()).users[newId].name).toStrictEqual({ first: 'tre', last: 'giles' });
-        expect((await getRawDB()).users[newId].type).toBe(backend.UserTypes.reporter);
+        expect((await getRawDB())?.users[newId].name).toStrictEqual({ first: 'tre', last: 'giles' });
+        expect((await getRawDB())?.users[newId].type).toBe(backend.UserTypes.reporter);
     });
 
     it('throws on non-existent user property', async () => {
@@ -375,14 +375,14 @@ describe('mergeUserData', () => {
     it('throws when an invalid id is specified', async () => {
         const predb = await getRawDB();
         expect(() => backend.mergeUserData(-1, { bad: true })).toThrow();
-        expect(await getRawDB()).toStrictEqual(predb);
+        expect(await getRawDB())?.toStrictEqual(predb);
     });
 
     it('does not throw and is noop on empty and null data', async () => {
         const predb = await getRawDB();
         expect(() => backend.mergeUserData(1, {})).not.toThrow();
         expect(() => backend.mergeUserData(1, null)).not.toThrow();
-        expect(await getRawDB()).toStrictEqual(predb);
+        expect(await getRawDB())?.toStrictEqual(predb);
     });
 
     it('throws on non-existent user property', async () => {
@@ -472,7 +472,7 @@ describe('generateOTPFor', () => {
         const newId = backend.createUser('testuser', 't');
         const newOTP = backend.generateOTPFor(newId);
 
-        expect((await getRawDB()).users[newId].otp).toBe(newOTP);
+        expect((await getRawDB())?.users[newId].otp).toBe(newOTP);
         expect(backend.getUserIdFromOTP(newOTP)).toBe(newId);
     });
 
@@ -481,13 +481,13 @@ describe('generateOTPFor', () => {
         const newOTP = backend.generateOTPFor(newId);
 
         expect(backend.getUserIdFromOTP(newOTP)).toBe(newId);
-        expect((await getRawDB()).users[newId].otp).toBe(newOTP);
+        expect((await getRawDB())?.users[newId].otp).toBe(newOTP);
 
         const newerOTP = backend.generateOTPFor(newId);
 
         expect(backend.getUserIdFromOTP(newOTP)).toBeNull();
         expect(backend.getUserIdFromOTP(newerOTP)).toBe(newId);
-        expect((await getRawDB()).users[newId].otp).toBe(newerOTP);
+        expect((await getRawDB())?.users[newId].otp).toBe(newerOTP);
     });
 
     it('returns `null` for invalid ids', async () => {
@@ -513,8 +513,8 @@ describe('clearOTPFor', () => {
 
         expect(backend.getUserIdFromOTP(newOTP)).toBeNull();
         expect(backend.getUserIdFromOTP(newOTP2)).toBe(newId2);
-        expect((await getRawDB()).users[newId].otp).toBe('');
-        expect((await getRawDB()).users[newId2].otp).toBe(newOTP2);
+        expect((await getRawDB())?.users[newId].otp).toBe('');
+        expect((await getRawDB())?.users[newId2].otp).toBe(newOTP2);
     });
 
     it('does not throw on invalid ids', async () => {

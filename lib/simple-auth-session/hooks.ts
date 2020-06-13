@@ -25,21 +25,21 @@ export function useRedirection({ endpointURI, redirectIf, redirectTo, redirectAr
         url => fetchEndpoint(url, { method: 'GET', ...fetchArgs }).then(o => o.data)
     );
 
-    const [ redirecting, setRedirecting ] = useState(null);
-    const isDone = !isUndefined(data);
+    const [ redirecting, setRedirecting ] = useState<boolean | null>(null);
 
     // ? This will cause all windows and tabs sharing the session to deauth
     useLayoutEffect(() => {
-        if(!isDone) return;
+        if(!isUndefined(data))
+            return;
 
-        if(!redirectTo || !redirectIf || !redirectIf(data, isDone))
+        if(!redirectTo || !redirectIf || !redirectIf(data, true))
             setRedirecting(false);
 
         else {
             frontendRedirect(redirectTo, redirectArgs);
             setRedirecting(true);
         }
-    }, [data, isDone, redirectIf, redirectTo, redirectArgs]);
+    }, [data, redirectIf, redirectTo, redirectArgs]);
 
     return { redirecting, mutate, error };
 }
