@@ -12,41 +12,41 @@ export default function ElectionPage() {
     // ? 0 = view, 1 = edit, 2 = delete, 3 = assign voters, 4 = assign mods
     const [ showMode, setShowMode ] = useState(0);
 
-    const onEditElection = e => {
+    const onEditElection = (e: React.SyntheticEvent) => {
         e.preventDefault();
     };
 
-    const onDeleteElection = e => {
+    const onDeleteElection = (e: React.SyntheticEvent) => {
         e.preventDefault();
     };
 
-    const onAssignVoters = e => {
+    const onAssignVoters = (e: React.SyntheticEvent) => {
         e.preventDefault();
     };
 
-    const onAssignModerators = e => {
+    const onAssignModerators = (e: React.SyntheticEvent) => {
         e.preventDefault();
     };
 
     const navbarRender = () => (isAdmin || isModerator) && (
         <React.Fragment>
             { isAdmin &&
-                <li className={showMode == 1 ? 'active' : null}>
+                <li className={showMode == 1 ? 'active' : undefined}>
                     <a href="#edit" onClick={onEditElection}>Edit election</a>
                 </li>
             }
             { isAdmin &&
-                <li className={showMode == 2 ? 'active' : null}>
+                <li className={showMode == 2 ? 'active' : undefined}>
                     <a href="#delete" onClick={onDeleteElection}>Delete election</a>
                 </li>
             }
             { (isAdmin || isModerator) &&
-                <li className={showMode == 3 ? 'active' : null}>
+                <li className={showMode == 3 ? 'active' : undefined}>
                     <a href="#assign-voters" onClick={onAssignVoters}>Assign voters</a>
                 </li>
             }
             { isAdmin &&
-                <li className={showMode == 4 ? 'active' : null}>
+                <li className={showMode == 4 ? 'active' : undefined}>
                     <a href="#assign-moderators" onClick={onAssignModerators}>Assign moderators</a>
                 </li>
             }

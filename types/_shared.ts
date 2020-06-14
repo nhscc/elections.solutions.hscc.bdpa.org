@@ -13,6 +13,7 @@ export type Primitive =
   | undefined;
 
 export type Falsy = false | '' | 0 | null | undefined;
+export type Nil = false | null | undefined;
 
 export type SuccessJsonResponse = { success: true };
 export type ErrorJsonResponse = { error: string };
@@ -41,4 +42,28 @@ export type NextParamsRR<T=Record<string, unknown>> = {
     res: NextApiResponse<T>;
 };
 
-export type NextParamsRRQ = NextParamsRR & { query: Record<string, unknown> };
+export type NextParamsRRQ = NextParamsRR & { query: string | string[] };
+
+// * https://github.com/joonhocho/tsdef/blob/master/src/index.ts
+// Make all properties optional recursively including nested objects. Keep in
+// mind that this should be used on json / plain objects only. Otherwise, it
+// will make class methods optional as well.
+export type DeepPartial<T> = {
+    [P in keyof T]?: T[P] extends Array<infer I>
+        ? Array<DeepPartial<I>>
+        : DeepPartial<T[P]>;
+};
+
+// * https://github.com/joonhocho/tsdef/blob/master/src/index.ts
+// Matches any objects
+export interface AnyObject {
+    [key: string]: unknown;
+    [key: number]: unknown;
+}
+
+// * https://github.com/joonhocho/tsdef/blob/master/src/index.ts
+// The union of two objects
+export type UnionObjects<
+    T extends AnyObject,
+    U extends AnyObject
+> = Omit<T, keyof U> & { [P in keyof T & keyof U]: T[P] | U[P] } & Omit<U, keyof T>;

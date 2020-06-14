@@ -6,7 +6,9 @@ import { mutate } from 'swr'
 import { useRouter } from 'next/router'
 import { useUserType } from 'universe/frontend/hooks'
 
-export type RenderProp = (activateIf: (...regularExpressions: string[]) => string | undefined) => JSX.Element;
+import type { Nil } from 'types/global'
+
+export type RenderProp = Nil | ((activateIf: (...regExs: string[]) => string | undefined) => JSX.Element | Nil);
 
 export default function Navbar({ children: renderProp }: { children?: RenderProp }) {
     const router = useRouter();

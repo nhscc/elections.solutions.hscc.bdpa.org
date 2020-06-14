@@ -2,9 +2,9 @@ import { deauth } from 'multiverse/simple-auth-session'
 import { handleEndpoint } from 'universe/backend/middleware'
 
 import type { NextApiResponse } from 'next'
-import type { NextSessionRequest } from 'multiverse/simple-auth-session'
+import type { NextAuthedSessionRequest as NextSessionRequest } from 'types/global'
 
-export default async function(req: NextSessionRequest, res: NextApiResponse): void {
+export default async function(req: NextSessionRequest, res: NextApiResponse) {
     await handleEndpoint(async () => {
         await deauth({ req, res });
         req.session.destroy();

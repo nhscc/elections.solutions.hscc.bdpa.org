@@ -2,11 +2,12 @@ import * as React from 'react'
 import { useRedirection } from 'multiverse/simple-auth-session/hooks'
 import { useUser } from 'universe/frontend/hooks'
 import PasswordForm from 'components/password-form'
+import { WithAuthed, User } from 'types/global';
 
 const REDIRECT_ON_NOT_FIRST_LOGIN_LOCATION = '/dashboard';
 
 export default function FirstLoginPage() {
-    const { redirecting } = useRedirection({
+    const { redirecting } = useRedirection<WithAuthed<User>>({
         endpointURI: '/api/user',
         redirectTo: REDIRECT_ON_NOT_FIRST_LOGIN_LOCATION,
         redirectIf: data => !data.authed || !data.firstLogin,

@@ -12,7 +12,8 @@ import {
 } from 'universe/backend'
 
 import type { NextApiResponse } from 'next'
-import type { NextSessionRequest } from 'multiverse/simple-auth-session'
+import type { NextSessionRequest } from 'types/global'
+import { AppError } from 'universe/backend/error'
 
 export const maxLoginAttempts = 3;
 export const rateLimitedSeconds = 900;
@@ -51,6 +52,9 @@ console.info(`cron  - initialized new rates watchdog`);
 
 export default async function(req: NextSessionRequest, res: NextApiResponse) {
     const ip = getClientIp(req);
+
+    if(!ip)
+        throw new AppError('unable to resolve client IP');
 
     const ifUserIsUnrestrictedThenAuth = async (userId: number) => {
         const user = getUser(userId);

@@ -6,13 +6,12 @@ import {
     getPublicUser,
 } from 'universe/backend'
 
+import type { User } from 'types/global'
 import type { NextParamsRRWithSession } from 'multiverse/simple-auth-session'
-import type { User, LastLogin } from 'types/global'
 
-export type NextParams = NextParamsRRWithSession<{ userId?: number, prevLogin?: LastLogin }>
-export type GenHanParams = NextParams & { methods: Array<string> };
-export type AsyncHanCallback = (params: NextParams) => Promise<void>;
-export type HanUseEndParams = NextParams & { returnAuthed?: boolean };
+export type GenHanParams = NextParamsRRWithSession & { methods: Array<string> };
+export type AsyncHanCallback = (params: NextParamsRRWithSession) => Promise<void>;
+export type HanUseEndParams = NextParamsRRWithSession & { returnAuthed?: boolean };
 
 /**
  * Generic middleware to handle any api endpoint. You can give it an empty async
@@ -20,7 +19,9 @@ export type HanUseEndParams = NextParams & { returnAuthed?: boolean };
  * endpoints).
  */
 export async function handleEndpoint(fn: AsyncHanCallback, { req, res, methods }: GenHanParams) {
-    // TODO: backport middleware updates from API source
+    // TODO: backport middleware updates from API source (response functions and
+    // TODO: middleware features) unit test middleware AND all endpoints AND all
+    // TODO: react element pages
 
     const resp = res as typeof res & { $send: typeof res.send };
     // ? This will let us know if the sent method was called
@@ -154,6 +155,8 @@ export function handleUserEndpoint(userId: number, { req, res, returnAuthed }: H
             res.status(403).send({ error: 'user lacks authorization to delete this user' });
 
         else {
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+            // @ts-ignore
             mergeUserData(userId, { deleted: true });
             res.status(200).send({ success: true });
         }

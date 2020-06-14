@@ -6,11 +6,12 @@ import isUndefined from 'is-undefined'
 import useSWR from 'swr'
 
 import type { FrontendRedirectArgs } from 'multiverse/isomorphic-redirect'
+import type { Options } from 'multiverse/fetch-endpoint'
 
-export type useRedirectionArgs = {
+export type useRedParams<T=Record<string, unknown>> = {
     endpointURI: string;
-    fetchArgs?: Record<string, unknown>;
-    redirectIf?: (data: Record<string, unknown>, isDone: boolean) => boolean;
+    fetchArgs?: Options;
+    redirectIf?: (data: T) => boolean;
     redirectTo?: string;
     redirectArgs?: FrontendRedirectArgs;
     verbose?: boolean;
@@ -20,7 +21,7 @@ export type useRedirectionArgs = {
 // TODO: react hook meant for frontend use only
 // TODO: returns "redirecting" null (undecided), true, or false
 // TODO: also returns mutate
-export function useRedirection({ endpointURI, redirectIf, redirectTo, redirectArgs, fetchArgs }: useRedirectionArgs) {
+export function useRedirection<T>({ endpointURI, redirectIf, redirectTo, redirectArgs, fetchArgs }: useRedParams<T>) {
     const { data, error, mutate } = useSWR(endpointURI,
         url => fetchEndpoint(url, { method: 'GET', ...fetchArgs }).then(o => o.data)
     );
@@ -32,7 +33,7 @@ export function useRedirection({ endpointURI, redirectIf, redirectTo, redirectAr
         if(isUndefined(data))
             return;
 
-        if(!redirectTo || !redirectIf || !redirectIf(data || {}, true))
+        if(!redirectTo || !redirectIf || !redirectIf(data || {}))
             setRedirecting(false);
 
         else {

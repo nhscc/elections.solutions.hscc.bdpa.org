@@ -2,14 +2,14 @@ import { JsonDB as DummyDB } from 'node-json-db';
 import { Config as DummyDBConfig } from 'node-json-db/dist/lib/JsonDBConfig'
 import { getEnv } from 'universe/backend/env'
 import { NotFoundError, ValidationError, AlreadyExistsError, AppError } from 'universe/backend/error';
-import { UserTypes, UserType, Users } from 'types/global'
+import { UserTypes, UserType, Users, DeepPartial } from 'types/global'
 import EmailValidator from 'email-validator'
 import isString from 'is-string'
 import isNumber from 'is-number';
 import deepMerge from 'deepmerge'
 import genRndString from 'crypto-random-string'
 
-import type { User, AugmentedUser } from 'types/global'
+import type { User, PublicUser } from 'types/global'
 
 let db: DummyDB;
 
@@ -19,7 +19,7 @@ export const expectedPhoneNumberLength = 10;
 export const expectedZipLength = 5;
 export const otpStringLength = 30;
 
-type DefaultUser = Omit<User, 'type' | 'firstLogin' | 'lastLogin'> & {
+export type DefaultUser = Omit<User, 'type' | 'firstLogin' | 'lastLogin'> & {
     type: null;
     firstLogin: true;
     lastLogin: { ip: '', time: null };
@@ -46,7 +46,7 @@ export const DefaultUserProperties: DefaultUser = {
 
 // ? These hardcoded values override whatever's in the database when we get the
 // ? root user's data
-export const rootHardcodedData = {
+const rootHardcodedData = {
     type: 'administrator',
     restricted: false,
     deleted: false,
@@ -104,7 +104,7 @@ export function setDB(JSONDatabase: any) { db = JSONDatabase; }
  *
  * Returns a merged data object that might be pushed into the database or null
  */
-const sanitizeUserData = ({ userId, data }: { userId?: number, data: Partial<User> }) => {
+const sanitizeUserData = ({ userId, data }: { userId?: number, data: DeepPartial<User> }) => {
     const hasUserId = userId !== undefined;
     const oldData = hasUserId ? getData(`/users/${userId}`) as User : null;
 
@@ -226,7 +226,7 @@ const sanitizeUserData = ({ userId, data }: { userId?: number, data: Partial<Use
     if(newData.otp !== '' && newData.otp != oldData?.otp && getData(`/otp->id/${newData.otp}`))
         throw new ValidationError(`otp is invalid, generate another`);
 
-    return { oldData: (oldData || {}) as Partial<User>, newData: newData };
+    return { oldData: oldData, newData: newData };
 };
 
 /**
@@ -235,7 +235,7 @@ const sanitizeUserData = ({ userId, data }: { userId?: number, data: Partial<Use
  * TODO: Hashed password will be salted server-side with the username:
  * TODO: `hashedPassword = SHA256(username + password)`.
  */
-export function createUser(username: string, password: string, type: UserType, data?: Record<string, unknown>) {
+export function createUser(username: string, password: string, type: UserType, data?: DeepPartial<User>) {
     const userId = getData(`/nextUserId`) as number;
 
     if(!userId)
@@ -270,7 +270,7 @@ export function getUserIdFromUsername(username: string) {
  * @param {*} email 
  */
 export function getUserIdFromEmail(email: string) {
-    const data = getData(`/email->id/${email}`) as string;
+    const data = getData(`/email->id/${email}`) as number;
 
     if(!data)
         throw new NotFoundError();
@@ -283,7 +283,7 @@ export function getUserIdFromEmail(email: string) {
  * @param {*} email 
  */
 export function getUserIdFromOTP(otp: string) {
-    const data = getData(`/otp->id/${otp}`) as string;
+    const data = getData(`/otp->id/${otp}`) as number;
 
     if(!data)
         throw new NotFoundError();
@@ -353,7 +353,7 @@ export function getUser(userId: number) {
         userId: userId,
         // ? Tell the client to go into debugging mode when we do
         debugging: getEnv().NODE_ENV != 'production'
-    } as AugmentedUser;
+    } as PublicUser;
 }
 
 /**
@@ -386,23 +386,23 @@ export function getPublicUsers() {
  * 
  * @param {*} username 
  */
-export function mergeUserData(userId: number, data: Record<string, unknown>) {
+export function mergeUserData(userId: number, data: DeepPartial<User>) {
     const { oldData, newData } = sanitizeUserData({ userId, data });
     putData(`/users/${userId}`, newData);
 
     if(data?.username) {
         putData(`/username->id/${data.username}`, userId);
-        oldData.username && delData(`/username->id/${oldData.username}`);
+        oldData?.username && delData(`/username->id/${oldData.username}`);
     }
 
     if(isString(data?.email)) {
         putData(`/email->id/${data.email}`, userId);
-        oldData.email && delData(`/email->id/${oldData.email}`);
+        oldData?.email && delData(`/email->id/${oldData.email}`);
     }
 
     if(isString(data?.otp)) {
         data.otp && putData(`/otp->id/${data.otp}`, userId);
-        oldData.otp && delData(`/otp->id/${oldData.otp}`);
+        oldData?.otp && delData(`/otp->id/${oldData.otp}`);
     }
 }
 

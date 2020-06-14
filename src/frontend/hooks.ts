@@ -5,14 +5,14 @@ import { FrontendHookError } from 'universe/backend/error'
 import { fetchEndpoint } from 'multiverse/fetch-endpoint'
 import useSWR from 'swr'
 
-import type { AugmentedUser } from 'types/global'
+import type { PublicUser, User, DeepPartial, WithAuthed, UnionObjects, WithPrevLogin } from 'types/global'
 
 /**
  * TODO: isXYZ are null when unknown/loading, false when false, true when true
  */
 export function useUserType() {
     const { data, error } = useSWR('/api/user', defaultSWRFetcher);
-    const user: AugmentedUser = data || {};
+    const user = data as PublicUser || {};
 
     if(error)
         throw new FrontendHookError(error);
@@ -44,12 +44,15 @@ export function useUser() {
     // ? This code gives the user object a method hidden in the prototype chain,
     // ? i.e. it won't show up when the object is spread, allowing for stuff
     // ? like: `newData = { ...user, some_data }`
-    const user = Object.assign(Object.create({
-        async put(o: Record<string, unknown>) {
+    const base = {
+        async put(o: DeepPartial<User>) {
             const { error: err } = await fetchEndpoint.put('/api/user', { body: JSON.stringify(o) });
             return { error: err };
         }
-    }), data) as AugmentedUser;
+    };
 
-    return { user, error, mutate };
+    type WAPL<T> = WithAuthed<WithPrevLogin<T>>;
+    const user = Object.assign<typeof base, WAPL<PublicUser>>(Object.create(base), data as WAPL<PublicUser>);
+
+    return { user: user as UnionObjects<typeof base, typeof user>, error, mutate };
 }

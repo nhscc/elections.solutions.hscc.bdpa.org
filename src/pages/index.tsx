@@ -3,11 +3,12 @@ import { useState, useEffect } from 'react'
 import { useRedirection } from 'multiverse/simple-auth-session/hooks'
 import { useUser } from 'universe/frontend/hooks'
 import { fetchEndpoint } from 'multiverse/fetch-endpoint'
+import { WithAuthed, User } from 'types/global'
 
 const REDIRECT_ON_AUTH_LOCATION = '/dashboard';
 
 export default function LoginPage() {
-    const { redirecting, mutate } = useRedirection({
+    const { redirecting, mutate } = useRedirection<WithAuthed<User>>({
         endpointURI: '/api/user',
         redirectTo: REDIRECT_ON_AUTH_LOCATION,
         redirectIf: data => data.authed && !data.deleted,
@@ -31,7 +32,7 @@ export default function LoginPage() {
     const [ sent, setSent ] = useState(false);
     const [ error, setError ] = useState('');
 
-    const handleLoginSubmit = async e => {
+    const handleLoginSubmit = async (e: React.SyntheticEvent) => {
         e.preventDefault();
 
         // ? We hash the password here so that the real password never leaves
@@ -47,7 +48,7 @@ export default function LoginPage() {
         res.ok ? mutate({ authed: true }) : setError(`${error}${triesLeft}`);
     };
 
-    const handleEmailSubmit = async e => {
+    const handleEmailSubmit = async (e: React.SyntheticEvent) => {
         e.preventDefault();
 
         if(!sent) {
@@ -57,7 +58,7 @@ export default function LoginPage() {
         }
     };
 
-    const handleToggleEmailPrompt = async e => {
+    const handleToggleEmailPrompt = async (e: React.SyntheticEvent) => {
         e.preventDefault();
         setError('');
         setShowEmailPrompt(!showEmailPrompt);

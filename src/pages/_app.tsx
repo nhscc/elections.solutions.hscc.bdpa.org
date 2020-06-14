@@ -1,5 +1,6 @@
 import * as React from 'react'
 import Head from 'next/head'
+import { AppProps } from 'next/app'
 
 import 'universe/global.scss'
 
@@ -34,7 +35,7 @@ import 'universe/global.scss'
 // ? 3. app.render
 // ? 4. page.render
 
-export default function App({ Component, pageProps }: Record<string, unknown>) {
+export default function App({ Component, pageProps }: AppProps) {
     return (// * ContextProvider(s) for passing down state could go here
         <React.Fragment>
             <Head>

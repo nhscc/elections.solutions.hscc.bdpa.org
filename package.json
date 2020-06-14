@@ -18,7 +18,7 @@
     "repl": "rlwrap npx -p @babel/core -p @babel/node babel-node",
     "preinstall": "npx npm-force-resolutions",
     "reset-db": "rm app.db.json && cp app.db.default.json app.db.json",
-    "check-types": "(command -v unbuffer >/dev/null && (unbuffer tsc && unbuffer eslint .) | less -R -FX || (tsc && eslint .)) && echo \"no problems detected!\""
+    "check-types": "(command -v unbuffer >/dev/null && (unbuffer tsc; unbuffer eslint .) | less -R -FX || (tsc; eslint .)) && echo \"no problems detected!\""
   },
   "author": "Xunnamius",
   "license": "ISC",

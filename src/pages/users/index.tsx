@@ -3,7 +3,7 @@ import { useUserType } from 'universe/frontend/hooks'
 import MainLayout from 'components/layout/main'
 
 export default function ListUsersPage(): JSX.Element {
-    const { isAdmin, isModerator } = useUserType();
+    //const { isAdmin, isModerator } = useUserType();
 
     return (
         <MainLayout>

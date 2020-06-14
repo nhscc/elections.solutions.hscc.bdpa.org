@@ -2,19 +2,19 @@ import * as React from 'react'
 import { useState } from 'react'
 import { useRouter } from 'next/router'
 import { useUserType, useUser } from 'universe/frontend/hooks'
-import { UserTypes } from 'types/global'
 import { useRedirection } from 'multiverse/simple-auth-session/hooks'
 import { defaultSWRFetcher } from 'universe/frontend'
+import { WithAuthed, User } from 'types/global'
 import MainLayout from 'components/layout/main'
 import useSWR from 'swr'
 
 const REDIRECT_ON_UNAUTH_LOCATION = '/dashboard';
 
 export default function UserPage() {
-    const { redirecting } = useRedirection({
+    const { redirecting } = useRedirection<WithAuthed<User>>({
         endpointURI: '/api/user',
         redirectTo: REDIRECT_ON_UNAUTH_LOCATION,
-        redirectIf: data => ![UserTypes.administrator, UserTypes.moderator].includes(data.type)
+        redirectIf: data => !['administrator', 'moderator'].includes(data.type as string)
     });
 
     const router = useRouter();
@@ -26,15 +26,15 @@ export default function UserPage() {
     // ? 0 = view, 1 = edit, 2 = restrict, 3 = delete
     const [ showMode, setShowMode ] = useState(0);
 
-    const handleEditUser = e => {
+    const handleEditUser = (e: React.SyntheticEvent) => {
         e.preventDefault();
     };
 
-    const handleDeleteUser = e => {
+    const handleDeleteUser = (e: React.SyntheticEvent) => {
         e.preventDefault();
     };
 
-    const handleRestrictUser = e => {
+    const handleRestrictUser = (e: React.SyntheticEvent) => {
         e.preventDefault();
     };
 
@@ -43,19 +43,19 @@ export default function UserPage() {
     // ? 2. Root can never be deleted or restricted
     // ? 3. Accounts cannot mutate/restrict themselves
     const viewingSelf = sessionUser.userId == pageUser?.userId;
-    const canMutatePageUser = viewingSelf || sessionUser.root || pageUser?.type != UserTypes.administrator;
+    const canMutatePageUser = viewingSelf || sessionUser.root || pageUser?.type != 'administrator';
 
     const navbarRender = () => isAdmin && canMutatePageUser && (
         <React.Fragment>
-            <li className={showMode == 1 ? 'active' : null}>
+            <li className={showMode == 1 ? 'active' : undefined}>
                 <a href="#edit" onClick={handleEditUser}>Edit user</a>
             </li>
             { !viewingSelf &&
                 <React.Fragment>
-                    <li className={showMode == 2 ? 'active' : null}>
+                    <li className={showMode == 2 ? 'active' : undefined}>
                         <a href="#restrict" onClick={handleRestrictUser}>Restrict user</a>
                     </li>
-                    <li className={showMode == 3 ? 'active' : null}>
+                    <li className={showMode == 3 ? 'active' : undefined}>
                         <a href="#delete" onClick={handleDeleteUser}>Delete user</a>
                     </li>
                 </React.Fragment>

@@ -6,7 +6,7 @@ import {
 import { handleUnauthedEndpoint } from 'universe/backend/middleware'
 
 import type { NextApiResponse } from 'next'
-import type { NextSessionRequest } from 'multiverse/simple-auth-session'
+import type { NextSessionRequest } from 'types/global'
 
 export default async function(req: NextSessionRequest, res: NextApiResponse) {
     await handleUnauthedEndpoint(async () => {

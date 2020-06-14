@@ -22,7 +22,7 @@ export default function DashboardPage() {
     });
 
     // ? If the last login info exists, cache it in memory
-    const ref = useRef(null);
+    const ref = useRef<typeof user.prevLogin | null>(null);
 
     if(user.prevLogin)
         ref.current = user.prevLogin;
@@ -52,7 +52,7 @@ export default function DashboardPage() {
         <MainLayout loading={!loaded}>
             <div>
                 <h1>Welcome back{ user?.name?.first ? nameEl : '' }!</h1>
-                {!!ref.current &&
+                {ref.current?.time &&
                 <h3>You last logged in from {ref.current.ip} on {(new Date(ref.current.time).toLocaleString())}</h3>}
                 { isVoter &&
                 <React.Fragment>

@@ -1,6 +1,6 @@
 import fetch from 'isomorphic-unfetch'
 
-export type FetEndReturnType = { error: string; data: Record<string, unknown>; res: Response };
+export type Options = RequestInit & { rejects?: boolean };
 
 /**
  * TODO: can specify special "rejects: true" option to enable throw
@@ -9,7 +9,7 @@ export type FetEndReturnType = { error: string; data: Record<string, unknown>; r
  * @param {*} url 
  * @param {*} options 
  */
-export async function fetchEndpoint(url: string, options?: Record<string, unknown>): Promise<FetEndReturnType> {
+export async function fetchEndpoint(url: string, options?: Options) {
     options = {
         method: 'POST',
         credentials: 'include',
@@ -37,7 +37,7 @@ export async function fetchEndpoint(url: string, options?: Record<string, unknow
 /**
  * TODO: document these
  */
-fetchEndpoint.get = (url: string, options?: Record<string, unknown>) => fetchEndpoint(url, { method: 'GET', ...options });
-fetchEndpoint.put = (url: string, options?: Record<string, unknown>) => fetchEndpoint(url, { method: 'PUT', ...options });
-fetchEndpoint.delete = (url: string, options?: Record<string, unknown>) => fetchEndpoint(url, { method: 'DELETE', ...options });
+fetchEndpoint.get = (url: string, options?: Options) => fetchEndpoint(url, { method: 'GET', ...options });
+fetchEndpoint.put = (url: string, options?: Options) => fetchEndpoint(url, { method: 'PUT', ...options });
+fetchEndpoint.delete = (url: string, options?: Options) => fetchEndpoint(url, { method: 'DELETE', ...options });
 fetchEndpoint.post = fetchEndpoint;

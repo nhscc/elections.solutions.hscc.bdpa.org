@@ -1,6 +1,7 @@
 import { applySession } from 'next-session'
 import findPackageJSON from 'find-package-json'
 
+import type Session from 'next-session/dist/session'
 import type { NextApiRequest, NextApiResponse } from 'next'
 
 export type NextParamsRR<T=Record<string, unknown>> = {
@@ -8,7 +9,12 @@ export type NextParamsRR<T=Record<string, unknown>> = {
     res: NextApiResponse<T>;
 };
 
-export type NextSessionRequest<T=unknown> = NextApiRequest & { session: { __sa: { authed: boolean }} & T};
+export type NextSessionRequest<T=unknown> = NextApiRequest & {
+    session: Session & {
+        __sa: { authed: boolean }
+    } & T
+};
+
 export type NextParamsRRWithSession<T=Record<string, unknown>> = NextParamsRR & { req: NextSessionRequest<T> };
 
 // TODO: document all of this

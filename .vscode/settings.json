@@ -61,7 +61,8 @@
     "velit",
     "vitae",
     "volutpat",
-    "vulputate"
+    "vulputate",
+    "wapl"
   ],
   "files.exclude": {
     "build": true

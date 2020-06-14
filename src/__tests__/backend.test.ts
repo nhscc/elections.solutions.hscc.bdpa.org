@@ -68,7 +68,24 @@ describe('createUser', () => {
     });
 
     it('throws on non-existent user property', async () => {
+        // @ts-ignore
         expect(() => backend.createUser('testuser', 'w', 'voter', { yes: 'no' })).toThrow();
+    });
+
+    it('throws on duplicate username', async () => {
+        backend.createUser('testuser', 'w', 'voter');
+        expect(() => backend.createUser('testuser', 'w', 'voter')).toThrow();
+    });
+
+    it('throws on bad type', async () => {
+        // @ts-ignore
+        expect(() => backend.createUser('testuser', 'w', '')).toThrow();
+        // @ts-ignore
+        expect(() => backend.createUser('testuser', 'w', null)).toThrow();
+        // @ts-ignore
+        expect(() => backend.createUser('testuser', 'w', 50)).toThrow();
+        // @ts-ignore
+        expect(() => backend.createUser('testuser', 'w', 'bad')).toThrow();
     });
 
     it('does not allow violations of uniqueness invariants', async () => {
@@ -97,32 +114,53 @@ describe('createUser', () => {
         // @ts-ignore
         test('illegal type', () => expect(() => backend.createUser('testuser', 't', 'bad')).toThrow());
         test('(legal firstLogin)', () => expect(() => backend.createUser('testuser', 't', 'voter', { firstLogin: false })).not.toThrow());
+        // @ts-ignore
         test('illegal lastLogin object 1', () => expect(() => backend.createUser('testuser', 't', 'voter', { lastLogin: null })).toThrow());
+        // @ts-ignore
         test('illegal lastLogin object 2', () => expect(() => backend.createUser('testuser', 't', 'voter', { lastLogin: { ip: '', time: null, cast: '' }})).toThrow());
         test('(legal lastLogin object 1)', () => expect(() => backend.createUser('testuser', 't', 'voter', { lastLogin: {} })).not.toThrow());
         test('(legal lastLogin object 2)', () => expect(() => backend.createUser('testuser', 't', 'voter', { lastLogin: { time: null }})).not.toThrow());
         test('(legal lastLogin object 3)', () => expect(() => backend.createUser('testuser', 't', 'voter', { lastLogin: { time: 5 }})).not.toThrow());
+        // @ts-ignore
         test('illegal name object 1', () => expect(() => backend.createUser('testuser', 't', 'voter', { name: null })).toThrow());
+        // @ts-ignore
         test('illegal name object 2', () => expect(() => backend.createUser('testuser', 't', 'voter', { name: { first: '', last: '', cast: '' }})).toThrow());
         test('(legal name object 1)', () => expect(() => backend.createUser('testuser', 't', 'voter', { name: {} })).not.toThrow());
         test('(legal name object 2)', () => expect(() => backend.createUser('testuser', 't', 'voter', { name: { first: '' }})).not.toThrow());
+        // @ts-ignore
         test('illegal elections object 1', () => expect(() => backend.createUser('testuser', 't', 'voter', { elections: null })).toThrow());
+        // @ts-ignore
         test('illegal elections object 2', () => expect(() => backend.createUser('testuser', 't', 'voter', { elections: { moderating: [], fake: '' }})).toThrow());
+        // @ts-ignore
         test('illegal elections object 3', () => expect(() => backend.createUser('testuser', 't', 'voter', { elections: { moderating: '' }})).toThrow());
+        // @ts-ignore
         test('illegal elections object 4', () => expect(() => backend.createUser('testuser', 't', 'voter', { elections: { moderating: [1234] }})).toThrow());
+        // @ts-ignore
         test('(legal elections object 1)', () => expect(() => backend.createUser('testuser', 't', 'voter', { elections: {} })).not.toThrow());
         test('(legal elections object 2)', () => expect(() => backend.createUser('testuser', 't', 'voter', { elections: { eligible: [], moderating: ['5'] }})).not.toThrow());
+        // @ts-ignore
         test('invalid email 1', () => expect(() => backend.createUser('testuser', 't', 'voter', { email: false })).toThrow());
+        // @ts-ignore
         test('invalid email 2', () => expect(() => backend.createUser('testuser', 't', 'voter', { email: 'no@.' })).toThrow());
+        // @ts-ignore
         test('invalid phone 1', () => expect(() => backend.createUser('testuser', 't', 'voter', { phone: false })).toThrow());
+        // @ts-ignore
         test('invalid phone 2', () => expect(() => backend.createUser('testuser', 't', 'voter', { phone: 'a'.repeat(backend.expectedPhoneNumberLength) })).toThrow());
+        // @ts-ignore
         test('invalid phone 3', () => expect(() => backend.createUser('testuser', 't', 'voter', { phone: '123456789' })).toThrow());
+        // @ts-ignore
         test('non-string address', () => expect(() => backend.createUser('testuser', 't', 'voter', { address: null })).toThrow());
+        // @ts-ignore
         test('non-string city', () => expect(() => backend.createUser('testuser', 't', 'voter', { city: true })).toThrow());
+        // @ts-ignore
         test('non-string state', () => expect(() => backend.createUser('testuser', 't', 'voter', { state: 0 })).toThrow());
+        // @ts-ignore
         test('non-number zip 1', () => expect(() => backend.createUser('testuser', 't', 'voter', { zip: false })).toThrow());
+        // @ts-ignore
         test('non-number zip 2', () => expect(() => backend.createUser('testuser', 't', 'voter', { zip: 'a'.repeat(backend.expectedZipLength) })).toThrow());
+        // @ts-ignore
         test('non-number zip 3', () => expect(() => backend.createUser('testuser', 't', 'voter', { zip: '0' })).toThrow());
+        // @ts-ignore
         test('non-string otp', () => expect(() => backend.createUser('testuser', 't', 'voter', { otp: null })).toThrow());
     });
 });
@@ -376,6 +414,7 @@ describe('mergeUserData', () => {
 
     it('throws when an invalid id is specified', async () => {
         const predb = await getRawDB();
+        // @ts-ignore
         expect(() => backend.mergeUserData(-1, { bad: true })).toThrow();
         expect(await getRawDB())?.toStrictEqual(predb);
     });
@@ -389,6 +428,7 @@ describe('mergeUserData', () => {
     });
 
     it('throws on non-existent user property', async () => {
+        // @ts-ignore
         expect(() => backend.mergeUserData(1, { yes: 'no' })).toThrow();
     });
 
@@ -404,6 +444,7 @@ describe('mergeUserData', () => {
     });
 
     describe('throws on invalid user properties', () => {
+        // @ts-ignore
         test('non-string username', () => expect(() => backend.mergeUserData(1, { username: false })).toThrow());
         test('too-short username', () => expect(() => backend.mergeUserData(1, { username: 'z'.repeat(backend.minUsernameLength - 1) })).toThrow());
         test('too-long username', () => expect(() => backend.mergeUserData(1, { username: 'a'.repeat(backend.maxUsernameLength + 1) })).toThrow());
@@ -411,37 +452,56 @@ describe('mergeUserData', () => {
         test('username with bad characters 2', () => expect(() => backend.mergeUserData(1,  { username: 'bro111' })).toThrow());
         test('non-unique username', () => expect(() => backend.mergeUserData(1, { username: 'user-admin' })).toThrow());
         test('(legal same username)', () => expect(() => backend.mergeUserData(1, { username: 'user-root' })).not.toThrow());
+        // @ts-ignore
         test('non-string password', () => expect(() => backend.mergeUserData(1, { password: false })).toThrow());
         // TODO: ensure passwords are proper (i.e. expected ciphertext length)
+        // @ts-ignore
         test('illegal type', () => expect(() => backend.mergeUserData(1, { type: 'bad' })).toThrow());
         test('illegal firstLogin', () => expect(() => backend.mergeUserData(1, { firstLogin: true })).toThrow());
         test('(legal firstLogin)', () => expect(() => backend.mergeUserData(1, { firstLogin: false })).not.toThrow());
+        // @ts-ignore
         test('illegal lastLogin object 1', () => expect(() => backend.mergeUserData(1, { lastLogin: null })).toThrow());
+        // @ts-ignore
         test('illegal lastLogin object 2', () => expect(() => backend.mergeUserData(1, { lastLogin: { ip: '', time: null, cast: '' }})).toThrow());
         test('(legal lastLogin object 1)', () => expect(() => backend.mergeUserData(1, { lastLogin: {} })).not.toThrow());
         test('(legal lastLogin object 2)', () => expect(() => backend.mergeUserData(1, { lastLogin: { time: null }})).not.toThrow());
+        // @ts-ignore
         test('(legal lastLogin object 3)', () => expect(() => backend.mergeUserData(1, { lastLogin: { time: 5 }})).not.toThrow());
+        // @ts-ignore
         test('illegal name object 1', () => expect(() => backend.mergeUserData(1, { name: null })).toThrow());
+        // @ts-ignore
         test('illegal name object 2', () => expect(() => backend.mergeUserData(1, { name: { first: '', last: '', cast: '' }})).toThrow());
         test('(legal name object 1)', () => expect(() => backend.mergeUserData(1, { name: {} })).not.toThrow());
         test('(legal name object 2)', () => expect(() => backend.mergeUserData(1, { name: { first: '' }})).not.toThrow());
+        // @ts-ignore
         test('illegal elections object 1', () => expect(() => backend.mergeUserData(1, { elections: null })).toThrow());
+        // @ts-ignore
         test('illegal elections object 2', () => expect(() => backend.mergeUserData(1, { elections: { moderating: [], fake: '' }})).toThrow());
+        // @ts-ignore
         test('illegal elections object 3', () => expect(() => backend.mergeUserData(1, { elections: { moderating: '' }})).toThrow());
         test('illegal elections object 4', () => expect(() => backend.mergeUserData(1, { elections: { moderating: ['x'] }})).not.toThrow());
         test('(legal elections object 1)', () => expect(() => backend.mergeUserData(1, { elections: {} })).not.toThrow());
+        // @ts-ignore
         test('(legal elections object 2)', () => expect(() => backend.mergeUserData(1, { elections: { eligible: [], moderating: [5] }})).toThrow());
+        // @ts-ignore
         test('invalid email 1', () => expect(() => backend.mergeUserData(1, { email: false })).toThrow());
         test('invalid email 2', () => expect(() => backend.mergeUserData(1, { email: 'no@.' })).toThrow());
+        // @ts-ignore
         test('invalid phone 1', () => expect(() => backend.mergeUserData(1, { phone: false })).toThrow());
         test('invalid phone 2', () => expect(() => backend.mergeUserData(1, { phone: 'a'.repeat(backend.expectedPhoneNumberLength) })).toThrow());
+        // @ts-ignore
         test('invalid phone 3', () => expect(() => backend.mergeUserData(1, { phone: '123456789' })).toThrow());
+        // @ts-ignore
         test('non-string address', () => expect(() => backend.mergeUserData(1, { address: null })).toThrow());
+        // @ts-ignore
         test('non-string city', () => expect(() => backend.mergeUserData(1, { city: true })).toThrow());
+        // @ts-ignore
         test('non-string state', () => expect(() => backend.mergeUserData(1, { state: 0 })).toThrow());
+        // @ts-ignore
         test('non-number zip 1', () => expect(() => backend.mergeUserData(1, { zip: false })).toThrow());
         test('non-number zip 2', () => expect(() => backend.mergeUserData(1, { zip: 'a'.repeat(backend.expectedZipLength) })).toThrow());
         test('non-number zip 3', () => expect(() => backend.mergeUserData(1, { zip: '0' })).toThrow());
+        // @ts-ignore
         test('non-string otp', () => expect(() => backend.mergeUserData(1, { otp: {} })).toThrow());
     });
 });

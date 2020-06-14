@@ -1,30 +1,30 @@
 import { handleAuthedEndpoint } from 'universe/backend/middleware'
-import { UserTypes } from 'types/global'
+import { User, DeepPartial } from 'types/global'
 import {
     createUser,
-    getUserData,
-    getUsersPublicData,
+    getUser,
+    getPublicUsers,
 } from 'universe/backend'
 
 import type { NextApiResponse } from 'next'
-import type { NextSessionRequest } from 'multiverse/simple-auth-session'
+import type { NextAuthedSessionRequest as NextSessionRequest } from 'types/global'
 
 export default async function(req: NextSessionRequest, res: NextApiResponse) {
     await handleAuthedEndpoint(async () => {
         if(req.method == 'GET')
-            res.status(200).send(getUsersPublicData());
+            res.status(200).send(getPublicUsers());
 
         if(req.method == 'POST') {
             try {
-                const user = getUserData(req.session.userId);
+                const user = getUser(req.session.userId);
 
-                if(user.type != UserTypes.administrator)
+                if(user.type != 'administrator')
                     res.status(403).send({ error: 'user lacks authorization to create new users' });
 
                 else {
-                    const { username, password, elections, otp, ...userData } = req.body;
+                    const { username, password, type, elections, otp, ...userData } = req.body as DeepPartial<User>;
 
-                    if(!user.root && userData.type == UserTypes.administrator)
+                    if(!user.root && type == 'administrator')
                         res.status(403).send({ error: 'user lacks authorization to create new administrators' });
 
                     else if(elections !== undefined)
@@ -36,8 +36,12 @@ export default async function(req: NextSessionRequest, res: NextApiResponse) {
                     else if(!username || !password)
                         res.status(400).send({ error: 'missing either `username` or `password` properties' });
 
+                    else if(!type) {
+                        res.status(400).send({ error: 'missing `type` property' });
+                    }
+
                     else {
-                        const userId = createUser(username, password, userData);
+                        const userId = createUser(username, password, type, userData);
                         res.status(200).send({ userId });
                     }
                 }

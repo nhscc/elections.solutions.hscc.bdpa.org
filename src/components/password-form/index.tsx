@@ -1,7 +1,6 @@
 import * as React from 'react'
 import { useState, useEffect, useCallback } from 'react'
 import { useUser } from 'universe/frontend/hooks'
-import { frontendRedirect } from 'multiverse/isomorphic-redirect'
 import NextLink from 'next/link'
 
 export const WEAK = -1;
@@ -13,7 +12,7 @@ export const validatePasswordsMatch = (p1: string, p2: string) => p1 == p2;
 export const calcPasswordStrength = (pass: string) => pass.length <= 10 ? WEAK : (pass.length <= 16 ? MEDIUM : STRONG);
 
 // TODO: document that it takes in topmatter via props
-export default function PasswordForm({ topmatter }: Record<string, unknown>) {
+export default function PasswordForm({ topmatter }: { topmatter?: JSX.Element }) {
     const { user } = useUser();
     const [ error, setError ] = useState('');
     const [ isFirstRender, setIsFirstRender ] = useState(true);
@@ -53,7 +52,7 @@ export default function PasswordForm({ topmatter }: Record<string, unknown>) {
         }
     }, [isFirstRender, checkStrongPassword, checkValidPassword]);
 
-    const handleSubmit = async e => {
+    const handleSubmit = async (e: React.SyntheticEvent) => {
         setCanSubmit(false); // ? Disable the submit button so it's not double clicked
         e.preventDefault();
 
@@ -63,15 +62,15 @@ export default function PasswordForm({ topmatter }: Record<string, unknown>) {
             const hashedPassword = `$SHA-256<${password}>`; // TODO: actually SHA-256 hash password
 
             // ? Send the updated data to the server and mutate key
-            const { err } = await user.put({
+            const { error } = await user.put({
                 firstLogin: false,
                 password: hashedPassword,
             });
 
-            // ? `err` will be an empty string/falsey if there is no error
-            setError(err);
+            // ? `error` will be an empty string/falsey if there is no error
+            setError(error);
             setCanSubmit(true);
-            !err && setSubmitted(true);
+            !error && setSubmitted(true);
         }
     };
 

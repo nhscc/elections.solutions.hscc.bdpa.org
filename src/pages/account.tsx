@@ -33,7 +33,7 @@ export default function AccountPage() {
         setLoaded(true);
     }
 
-    const handleSubmit = async e => {
+    const handleSubmit = async (e: React.SyntheticEvent) => {
         e.preventDefault();
         setDisabled(true);
 

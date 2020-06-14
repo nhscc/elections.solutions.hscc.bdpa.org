@@ -1,3 +1,8 @@
+import type {
+    NextParamsRRWithSession as NPR,
+    NextSessionRequest as NSR
+} from 'multiverse/simple-auth-session'
+
 // ? Access types shared between projects from `types/global` too
 export * from './_shared';
 
@@ -9,16 +14,16 @@ export const UserTypes: UserType[] = ['administrator', 'moderator', 'voter', 're
 
 export type LastLogin = {
     ip: string;
-    time: number;
+    time: number | null;
 };
 
 export type User = {
     username: string;
     password: string;
     type: UserType;
-    firstLogin: false;
-    deleted: false;
-    restricted: false;
+    firstLogin: boolean;
+    deleted: boolean;
+    restricted: boolean;
     lastLogin: LastLogin;
     name: {
         first: string;
@@ -39,9 +44,9 @@ export type User = {
 
 export type Users = { [userId: string]: User };
 
-export type AugmentedUser = User & {
+export type PublicUser = User & {
     root: boolean;
-    userId: number,
+    userId: number;
     debugging: boolean;
 }
 
@@ -57,3 +62,14 @@ export type Database = {
     'otp->id': { [otp: string]: number };
 };
 
+type AppSessionProperties = {
+    userId: number;
+    prevLogin: LastLogin;
+};
+
+export type NextSessionRequest = NSR;
+export type NextAuthedSessionRequest = NSR<AppSessionProperties>;
+export type NextParamsRRWithSession = NPR<AppSessionProperties>;
+
+export type WithAuthed<T> = { authed: boolean } & T;
+export type WithPrevLogin<T> = { prevLogin: LastLogin } & T;
