@@ -1,4 +1,3 @@
-# 2019 Problem Statement 1 Solution (Elections)
+# elections.solutions.hscc.bdpa.org
 
-(todo: documentation)
-(todo: add link to ps2)
+(TODO)
